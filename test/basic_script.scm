@@ -1,7 +1,16 @@
+#!/usr/bin/guile \
+-s
+!#
 ; a basic test of the xbindjoy guile
 
-(system "echo bar")
+(display "--------------------------------------")
+(newline)
+(define xbindjoy-lib (dynamic-link "../build/.libs/libguile-xbindjoy.so"))
+(dynamic-call "init_xbindjoy" xbindjoy-lib)
 
 
-;; (bind-button (press button-1)
-;;              (system "echo \"foo!\'"))
+
+(display (device->jsname "/dev/input/js0")) (newline)
+
+
+
