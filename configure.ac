@@ -22,6 +22,8 @@ AC_C_RESTRICT
 AC_C_INLINE
 AC_C_CONST
 
+dnl find modules
+PKG_CHECK_MODULES([GUILE], [guile-2.0])
 
 
 dnl Enable maximum warnings
