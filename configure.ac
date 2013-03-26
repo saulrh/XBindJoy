@@ -3,6 +3,7 @@ dnl configure package
 AC_PREREQ([2.65])
 AC_INIT([XBindJoy], [0.1], [sreynoldshaertle@gmail.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+AM_SILENT_RULES([yes])
 
 dnl configure directories
 AC_CONFIG_MACRO_DIR([m4])
