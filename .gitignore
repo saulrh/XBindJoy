@@ -32,7 +32,15 @@ Makefile.in
 /autom4te.cache
 /aclocal.m4
 /compile
+
+# and other things
+
 /configure
 /depcomp
 /install-sh
 /missing
+/config.guess
+/config.h.in
+/config.sub
+/ltmain.sh
+/m4/*
