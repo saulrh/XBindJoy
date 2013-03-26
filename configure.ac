@@ -30,6 +30,9 @@ LT_INIT([shared disable-static])
 dnl find modules
 PKG_CHECK_MODULES([GUILE], [guile-2.0])
 
+dnl load up guile stuff
+GUILE_PROGS
+GUILE_FLAGS
 
 dnl Enable maximum warnings
 m4_ifdef([AX_CFLAGS_WARN_ALL],
