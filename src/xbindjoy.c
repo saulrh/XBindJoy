@@ -34,10 +34,8 @@ void debug_print(const char* msg);
 /*   sender contains functions for sending x events */
 
 /* stuff you can do in scheme:
- * (xbindjoy-send-key '('both "K")) ; presses and releases the K key
  * (xbindjoy-send-key '('press "K")) ; sends a keyup K
  * (xbindjoy-send-key '('release "K")) ; sends a keydown K
- * (xbindjoy-send-button '('both 1)) ; presses and releases mouse button 1
  * (xbindjoy-send-button '('press 1)) ; presses mouse button 1
  * (xbindjoy-send-button '('release 1)) ; releases mouse button 1
  * (xbindjoy-send-mouserel x y) ; moves the mouse to a position (x, y) relative to the current pos
@@ -50,13 +48,13 @@ void debug_print(const char* msg);
 void joystick_loop(SCM joysticks) {
     /* open joystick devices */
     /* main loop */
-    /*   sleep until next tick */
-    /*   read all the joystick devices to grab any new events */
-    /*   dispatch button state changes to handlers */
-    /*   dispatch dt and axis state to each axis handler */
-    /* end loop */
     while(1) {
+        /*   sleep until next tick */
+        /*   read all the joystick devices to grab any new events */
+        /*   dispatch button state changes to handlers */
+        /*   dispatch dt and axis state to each axis handler */
     }
+    /* end loop */
 }
 
 void inner_main(void* data, int argc, char** argv) {
