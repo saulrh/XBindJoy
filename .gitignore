@@ -44,3 +44,4 @@ Makefile.in
 /config.sub
 /ltmain.sh
 /m4/*
+/config.h.in~
