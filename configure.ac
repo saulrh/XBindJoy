@@ -25,10 +25,14 @@ AC_C_CONST
 dnl load up libtool
 LT_INIT([shared disable-static])
 
-
-
-dnl find modules
+dnl find stuff
 PKG_CHECK_MODULES([GUILE], [guile-2.0])
+AC_SEARCH_LIBS(
+        [XTestFakeRelativeMotionEvent],
+        [Xtst X11],
+        [],
+        [AC_MSG_ERROR([unable to find xtest functions])])
+                                               
 
 dnl load up guile stuff
 GUILE_PROGS
