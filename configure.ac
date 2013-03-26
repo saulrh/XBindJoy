@@ -16,11 +16,15 @@ dnl Check for capabitieis of various programs
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
 AC_PROG_CC_C89
-AC_PROG_LIBTOOL
 
 AC_C_RESTRICT
 AC_C_INLINE
 AC_C_CONST
+
+dnl load up libtool
+LT_INIT([shared disable-static])
+
+
 
 dnl find modules
 PKG_CHECK_MODULES([GUILE], [guile-2.0])

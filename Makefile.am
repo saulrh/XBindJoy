@@ -6,7 +6,8 @@ AM_LDFLAGS = `pkg-config --libs guile-2.0`
 
 # SUBDIRS = .
 # dist_doc_DATA = README
-bin_PROGRAMS = xbindjoy
+lib_LTLIBRARIES = libguile-xbindjoy.la
 
-xbindjoy_SOURCES = src/xbindjoy.c
+libguile_xbindjoy_la_SOURCES = src/xbindjoy.c src/joystick.c
+libguile_xbindjoy_la_LTFLAGS = -version-info 0:0:0
 
