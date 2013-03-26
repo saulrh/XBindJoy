@@ -1,4 +1,4 @@
-/* xbindjoy.h: some global variables for the entire xbindjoy program
+/* sender.h: functions for sending mouse and keyboard events from guile
  *
  * Copyright 2013 Saul Reynolds-Haertle.
  *
@@ -19,7 +19,13 @@
 
 #pragma once
 
-#include<X11/Xlib.h>
+int send_key(KeyCode xkeycode, int is_down);
+int send_button(int xbuttoncode, int is_down);
+int send_mouserel(int x, int y);
+int send_mouseabs(int x, int y);
 
-int verbose;
-Display* display;
+
+SCM send_key_wrapper(SCM xkey);
+SCM send_button_wrapper(SCM xbuttoncode);
+SCM send_mouserel_wrapper(SCM x, SCM y);
+SCM send_mouseabs_wrapper(SCM x, SCM y);

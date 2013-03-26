@@ -23,6 +23,7 @@
 
 #include "xbindjoy.h"
 #include "joystick.h"
+#include "sender.h"
 
 void debug_print(const char* msg);
 
@@ -32,21 +33,21 @@ void debug_print(const char* msg);
 /*   joystick contains functions for handling joystick data */
 /*   sender contains functions for sending x events */
 
-/* scheme code structure:
- * (define js (jsname->device "name of joystick")) ; maps name -> /dev/input/jsN
- * (xbindjoy-button js press 1     ; bind button 1 press events on joystick js
- *                  (lambda () t)) ; to this procedure
- * (xbindjoy-axes js                    ; approximately every TIMESTEP milliseconds,
- *                (lambda (dt vals) t)) ; C calls this function with the stuff filled in
- *                                      ; vals is a list of pairs (axisnum . axisval)
+/* stuff you can do in scheme:
+ * (xbindjoy-send-key '('both "K")) ; presses and releases the K key
+ * (xbindjoy-send-key '('press "K")) ; sends a keyup K
+ * (xbindjoy-send-key '('release "K")) ; sends a keydown K
+ * (xbindjoy-send-button '('both 1)) ; presses and releases mouse button 1
+ * (xbindjoy-send-button '('press 1)) ; presses mouse button 1
+ * (xbindjoy-send-button '('release 1)) ; releases mouse button 1
+ * (xbindjoy-send-mouserel x y) ; moves the mouse to a position (x, y) relative to the current pos
+ * (xbindjoy-send-mouseabs x y) ; moves the mouse to a position (x, y) on the screen
  */
-
-
 
 
 /* main event loop: call this and it will run forever, listening for
  * joystick inputs and running your code when it gets them */
-void joystick_loop() {
+void joystick_loop(SCM joysticks) {
     /* open joystick devices */
     /* main loop */
     /*   sleep until next tick */
@@ -54,9 +55,32 @@ void joystick_loop() {
     /*   dispatch button state changes to handlers */
     /*   dispatch dt and axis state to each axis handler */
     /* end loop */
+    while(1) {
+    }
 }
 
-void init_xbindjoy() {
-    verbose = 1;
+void inner_main(void* data, int argc, char** argv) {
+    /* for going from joystick names to devices or vice versa */
     scm_c_define_gsubr("device->jsname", 1, 0, 0, get_joystick_name_wrapper);
+
+    /* for sending x events to the screen */
+    scm_c_define_gsubr("xbindjoy-send-key", 1, 0, 0, send_key_wrapper);
+    scm_c_define_gsubr("xbindjoy-send-button", 1, 0, 0, send_button_wrapper);
+    scm_c_define_gsubr("xbindjoy-send-mouserel", 2, 0, 0, send_mouserel_wrapper);
+    scm_c_define_gsubr("xbindjoy-send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
+
+    /* and the loop */
+    scm_c_define_gsubr("xbindjoy-start", 1, 0, 0, joystick_loop);
+
+    /* and finally start reading lisp */
+    scm_shell(argc, argv);
+}
+
+int main(int argc, char** argv) {
+    /* set up variables */
+    verbose = 1;
+    display = XOpenDisplay(getenv("DISPLAY"));
+
+    /* boot up guile */
+    scm_boot_guile(argc, argv, inner_main, NULL);
 }
