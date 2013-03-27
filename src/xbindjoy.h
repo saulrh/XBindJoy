@@ -23,3 +23,17 @@
 
 int verbose;
 Display* display;
+
+
+
+typedef enum {
+PRESS,
+RELEASE
+} key_action_e;
+
+
+
+long int axis_time; /* how many nanoseconds to wait between sending axis
+                     * updates to the user's code. in normal use cases,
+                     * specifies - approximately! - the frequency with
+                     * which the mouse will update from the joystick. */

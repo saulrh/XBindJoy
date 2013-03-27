@@ -89,6 +89,7 @@ void inner_main(void* data, int argc, char** argv) {
 
 int main(int argc, char** argv) {
     /* set up variables */
+    axis_time = (1000 * 1000 * 1000);
     verbose = 1;
     display = XOpenDisplay(getenv("DISPLAY"));
 
