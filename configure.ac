@@ -27,9 +27,7 @@ LT_INIT([shared disable-static])
 
 dnl find stuff
 PKG_CHECK_MODULES([GUILE], [guile-2.0])
-AC_SEARCH_LIBS(
-        [XTestFakeRelativeMotionEvent],
-        [Xtst X11],
+AC_SEARCH_LIBS([XTestFakeRelativeMotionEvent], [Xtst],
         [],
         [AC_MSG_ERROR([unable to find xtest functions])])
                                                
