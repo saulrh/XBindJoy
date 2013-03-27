@@ -28,7 +28,7 @@
 #include "joystick.h"
 
 /* ************************************************* */
-/* device name handling */
+/* joystick parameter discovery */
 
 char* get_joystick_name(char* iodev) {
 
@@ -50,6 +50,18 @@ SCM get_joystick_name_wrapper(SCM iodev) {
     SCM result = scm_from_locale_string(name);
     if (name)
         free(name);
+    return result;
+}
+
+int get_joystick_num_axes(char* iodev) {
+    int jsfd = open(iodev, O_RDONLY);
+    int naxes;
+    int rvalue = ioctl(jsfd, JSIOCGAXES, &naxes);
+    return naxes;
+}
+SCM get_joystick_num_axes_wrapper(SCM iodev) {
+    int naxes = get_joystick_num_axes(scm_to_locale_string(iodev));
+    SCM result = scm_from_int(naxes);
     return result;
 }
 
@@ -103,19 +115,22 @@ int handle_and_dispatch_keys(keymap_t* kmap, struct js_event e) {
 /* ************************************************* */
 /* axis mapping */
 
-axismap_t* build_axismap_from_scm_alist(SCM amap_alist) {
-    axismap_t* result = malloc(sizeof(axismap_t*));
-    result->naxes = scm_to_int(scm_length(amap_alist));
-    result->axes = malloc(result->naxes * sizeof(bind_axis_t));
+int handle_axis(int* axis_vals, struct js_event e) {
+    axis_vals[e.number] = e.value;
+}
 
-    if (verbose)
-        printf("build_axismap_from_scm_alist: building axismap out of alist of length %d\n", (int)result->naxes);
+int dispatch_axes(int* axis_vals, size_t naxes, double dt, SCM axis_func) {
+    SCM output_alist = SCM_EOL;
+
+    for (size_t i = 0; i < naxes; i++)
+        output_alist = scm_acons(scm_from_int(i), scm_from_int(axis_vals[i]), output_alist);
     
-    return result;
-}
+    scm_call(axis_func, output_alist, SCM_UNDEFINED);
 
-int handle_axis(axismap_t* amap, struct js_event e) {
-}
-
-int dispatch_axis(axismap_t* amap, double dt) {
+    if(verbose) {
+        printf("Axis values: ");
+        for (size_t i = 0; i < naxes; i++)
+            printf("%d: %5d  ", (int)i, axis_vals[i]);
+        printf("\n");
+    }
 }

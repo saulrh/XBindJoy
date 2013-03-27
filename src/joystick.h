@@ -36,26 +36,16 @@ typedef struct {
 } keymap_t;
 
 
-/* data structures for binding axes */
-typedef struct {
-    int axis_index;
-    uint8_t current_value;
-    SCM function;
-} bind_axis_t;
-
-typedef struct {
-    int naxes;
-    bind_axis_t* axes;
-} axismap_t;
-
-
 /* functions */
 char* get_joystick_name(char* iodev);
 SCM get_joystick_name_wrapper(SCM iodev);
 
+int get_joystick_num_axes(char* iodev);
+SCM get_joystick_num_axes_wrapper(SCM iodev);
+
+
 keymap_t* build_keymap_from_scm_alist(SCM kmap_alist);
 int handle_and_dispatch_keys(keymap_t* kmap, struct js_event e);
 
-axismap_t* build_axismap_from_scm_alist(SCM amap_alist);
-int handle_axis(axismap_t* amap, struct js_event e);
-int dispatch_axis(axismap_t* amap, double dt);
+int handle_axis(int* axis_vals, struct js_event e);
+int dispatch_axes(int* axis_vals, size_t naxes, double dt, SCM axis_func);

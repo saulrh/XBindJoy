@@ -49,11 +49,13 @@
 
 /* main event loop: call this and it will run forever, listening for
  * joystick inputs and running your code when it gets them */
-void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axismap_alist) {
-    /* use the input from guile to build up keymap. */
+void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axis_func) {
+    /* use the input from guile to build up the keymap. */
     keymap_t* kmap = build_keymap_from_scm_alist(keymap_alist);
-    axismap_t* amap = build_axismap_from_scm_alist(axismap_alist);
-
+    int naxes = scm_to_int(get_joystick_num_axes_wrapper(jsdevice)); /* TODO: FIXME: badwrong */
+    int* axis_vals = malloc(naxes * sizeof(int));
+    for(size_t i = 0; i < naxes; i++) axis_vals[i] = 0;
+    
     /* open the joystick device */
     /* we're only waiting on one joystick at a time for now, so we're
      * going to use a single variable and hardcode the struct for the
@@ -100,7 +102,7 @@ void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axismap_alist) {
                             handle_and_dispatch_keys(kmap, e);
                         }
                         else if (e.type == JS_EVENT_AXIS) {
-                            handle_axis(amap, e);
+                            handle_axis(axis_vals, e);
                         }
                 }
                 if (pollfds[i].revents & (POLLNVAL | POLLHUP | POLLERR)) {
@@ -124,7 +126,7 @@ void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axismap_alist) {
          * dt and make the call */
         dt = (double)(cur_time.tv_sec - last_tick.tv_sec)
             + (double)(cur_time.tv_nsec - last_tick.tv_nsec) / BILLION;
-        dispatch_axis(amap, dt);
+        dispatch_axes(axis_vals, naxes, dt, axis_func);
 
         /* update time structures */
         last_tick.tv_sec = cur_time.tv_sec;
@@ -136,15 +138,15 @@ void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axismap_alist) {
     free(pollfds);
     free(kmap->keys); kmap->keys = NULL;
     free(kmap); kmap = NULL;
-    free(amap->axes); amap->axes = NULL;
-    free(amap); amap = NULL;
+    free(axis_vals); axis_vals = NULL;
 
     exit(0);
 }
 
 void inner_main(void* data, int argc, char** argv) {
-    /* for going from joystick names to devices or vice versa */
+    /* for figuring out joystick parameters */
     scm_c_define_gsubr("device->jsname", 1, 0, 0, get_joystick_name_wrapper);
+    scm_c_define_gsubr("xbindjoy-get-js-num-axes", 1, 0, 0, get_joystick_num_axes_wrapper);
 
     /* for sending x events to the screen */
     scm_c_define_gsubr("xbindjoy-send-key", 1, 0, 0, send_key_wrapper);
@@ -166,7 +168,7 @@ int main(int argc, char** argv) {
                                        * scheduler is willing to do
                                        * when async IO isn't
                                        * involved */
-    verbose = 1;
+    verbose = 0;
     display = XOpenDisplay(getenv("DISPLAY"));
 
     /* boot up guile */
