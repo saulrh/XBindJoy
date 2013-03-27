@@ -50,6 +50,10 @@
 ;;; as above, but we use the bind-key special form to automate the syntax
 (bind-key stratcom-key 2 K)
 
+;;; we can also map to mouse buttons
+(define-key stratcom-key '(press . 0) (lambda () (xbindjoy-send-button '(press . 1))))
+(define-key stratcom-key '(release . 0) (lambda () (xbindjoy-send-button '(release . 1))))
+
 ;;; something more complicated - remember the state of button 3 and
 ;;; use to to make button 4 do different things if it's pressed with
 ;;; or without button 3 down.
