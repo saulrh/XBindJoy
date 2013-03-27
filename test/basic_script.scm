@@ -70,11 +70,16 @@
                                          (release . K))))))
 
 
+(define (sign x)
+  (if (>= 0 x) 1 -1))
+
 (define (stratcom-axis axis-vals-alist)
   (let ((x (cdr (assoc 0 axis-vals-alist)))
         (y (cdr (assoc 1 axis-vals-alist)))
         (rz (cdr (assoc 2 axis-vals-alist))))
-    (begin (display x) (display " ") (display y) (display " ") (display rz) (newline))))
+    (xbindjoy-send-mouserel
+     (* -30 (sign x) (expt (/ x 32768) 2))
+     (* -30 (sign y) (expt (/ y 32768) 2)))))
 
 ;;; and finally we feed xbindjoy our keymap and the joystick device to
 ;;; xbindjoy so it can start processing. Make sure that this is the
