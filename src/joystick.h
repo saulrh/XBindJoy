@@ -19,6 +19,20 @@
 
 #pragma once
 
+#include "xbindjoy.h"
+
 char* get_joystick_name(char* iodev);
 SCM get_joystick_name_wrapper(SCM iodev);
 
+typedef struct {
+    int key_index;
+    key_action_e key_action;
+    SCM function;
+} mapping_t;
+
+typedef struct {
+    size_t nkeys;
+    mapping_t* maps;
+} keymap_t;
+
+keymap_t build_keymap_from_scm_alist(SCM keymap);

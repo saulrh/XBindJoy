@@ -50,3 +50,6 @@ SCM get_joystick_name_wrapper(SCM iodev) {
         free(name);
     return result;
 }
+
+keymap_t build_keymap_from_scm_alist(SCM keymap) {
+}
