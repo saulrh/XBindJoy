@@ -16,7 +16,7 @@ AC_CONFIG_FILES([
 dnl Check for capabitieis of various programs
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
-AC_PROG_CC_C99
+AC_PROG_CC_STDC
 
 AC_C_RESTRICT
 AC_C_INLINE
