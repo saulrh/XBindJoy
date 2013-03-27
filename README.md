@@ -1,9 +1,25 @@
 XBindJoy
 ========
 
-XBindJoy is a program that translates joystick and joypad events into shell commands, mouse movements, or keypresses.
+XBindJoy is a tool for making your joysticks and gamepads more
+useful. It lets you use GNU Guile to bind arbitrary scheme code to
+joystick button presses and joystick axis movements, and provides
+function calls to send synthetic key presses, mouse clicks, and mouse
+movements from those procedures. Guile makes it easy to bind hotkeys
+to joystick button chords, radically change hotkey functionality at
+runtime, and more.
 
-Current Status
-==============
+About
+=====
 
-The code is unclean and I have a sneaking suspicion that there's a style guide somewhere I'm not following, but buttons work! Closures and varaible bindings mean that XBindJoy is already a more powerful joystick macro tool than anything else out there.
+* Authors:      Check the copyright notices in each file
+* License:      GPL General Public License v3
+
+Example uses
+============
+
+* Bind joystick axes to mouse movement for aiming in FPS games
+* Turn any joystick into a chorded keyboard + mouse combo
+* Joystick macros everywhere For Great Real-Time Strategy Justice
+* Bind window manager functionality to a more ergonomic input device
+* Playing Minecraft? Make crouch a toggle and never fall into lava again
