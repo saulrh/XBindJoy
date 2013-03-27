@@ -65,4 +65,5 @@
 ;;; last thing you call - it will never return!
 (define jsd (jsname->device "Microsoft Microsoft SideWinder Strategic Commander"))
 ;; (display jsd) (newline)
-(xbindjoy-start jsd stratcom)
+;; (pretty-print stratcom)
+(xbindjoy-start jsd stratcom '())

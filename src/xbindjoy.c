@@ -49,9 +49,10 @@
 
 /* main event loop: call this and it will run forever, listening for
  * joystick inputs and running your code when it gets them */
-void joystick_loop(SCM jsdevice, SCM jsmap) {
+void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axismap_alist) {
     /* use the input from guile to build up keymap. */
-    keymap_t kmap = build_keymap_from_scm_alist(jsmap);
+    keymap_t* kmap = build_keymap_from_scm_alist(keymap_alist);
+    axismap_t* amap = build_axismap_from_scm_alist(axismap_alist);
 
     /* open the joystick device */
     /* we're only waiting on one joystick at a time for now, so we're
@@ -123,7 +124,12 @@ void joystick_loop(SCM jsdevice, SCM jsmap) {
     }
     /* end loop - we should probably never reach this code */
 
-    free(pollfds);              /* just to be safe */
+    /* just to be safe, though, free memory */
+    free(pollfds);
+    free(kmap->keys); kmap->keys = NULL;
+    free(kmap); kmap = NULL;
+    free(amap->axes); amap->axes = NULL;
+    free(amap); amap = NULL;
 
     exit(0);
 }
@@ -139,7 +145,7 @@ void inner_main(void* data, int argc, char** argv) {
     scm_c_define_gsubr("xbindjoy-send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
 
     /* and the loop */
-    scm_c_define_gsubr("xbindjoy-start", 2, 0, 0, joystick_loop);
+    scm_c_define_gsubr("xbindjoy-start", 3, 0, 0, joystick_loop);
 
     /* and finally start reading lisp */
     scm_shell(argc, argv);
