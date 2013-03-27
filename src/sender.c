@@ -119,8 +119,8 @@ SCM send_key_wrapper(SCM xkey) {
 SCM send_button_wrapper(SCM xkey) {
     int result;
     char* action = scm_to_locale_string(scm_symbol_to_string(SCM_CAR(xkey)));
-    result = send_key(scm_to_int(SCM_CDR(xkey)),
-                      strcmp(action, "press") == 0);
+    result = send_button(scm_to_int(SCM_CDR(xkey)),
+                         strcmp(action, "press") == 0);
     free(action);
 
     if (verbose)
