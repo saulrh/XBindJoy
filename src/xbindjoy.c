@@ -18,14 +18,27 @@
  * along with XBindJoy.  If not, see <http://www.gnu.org/licenses/>. */
 
 
-/* #include <config.h> */
+/* we're going to use a few things here that are specific to the GNU
+ * standard libraries; the biggest one is ppoll, which I intend to use
+ * eventually so that we can catch signals and release keys before we
+ * exit. */
+#define _GNU_SOURCE
+#include <features.h>
+
+#include <stdlib.h>
 #include <libguile.h>
+#include <fcntl.h>
+#include <time.h>
+#include <poll.h>
+#include <errno.h>
+#include <linux/joystick.h>
+#include <assert.h>
 
 #include "xbindjoy.h"
 #include "joystick.h"
 #include "sender.h"
 
-void debug_print(const char* msg);
+#define BILLION 1000000000
 
 
 /* C code structure: */
