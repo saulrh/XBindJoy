@@ -63,6 +63,6 @@
 ;;; and finally we feed xbindjoy our keymap and the joystick device to
 ;;; xbindjoy so it can start processing. Make sure that this is the
 ;;; last thing you call - it will never return!
-(define temp (cons (jsname->device "Microsoft Microsoft SideWinder Strategic Commander") stratcom))
-(pretty-print temp) (newline)
-;; (xbindjoy-start temp)
+(define jsd (jsname->device "Microsoft Microsoft SideWinder Strategic Commander"))
+;; (display jsd) (newline)
+(xbindjoy-start jsd stratcom)

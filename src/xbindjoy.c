@@ -46,28 +46,119 @@
 /*   joystick contains functions for handling joystick data */
 /*   sender contains functions for sending x events */
 
-/* stuff you can do in scheme:
- * (xbindjoy-send-key '('press "K")) ; sends a keyup K
- * (xbindjoy-send-key '('release "K")) ; sends a keydown K
- * (xbindjoy-send-button '('press 1)) ; presses mouse button 1
- * (xbindjoy-send-button '('release 1)) ; releases mouse button 1
- * (xbindjoy-send-mouserel x y) ; moves the mouse to a position (x, y) relative to the current pos
- * (xbindjoy-send-mouseabs x y) ; moves the mouse to a position (x, y) on the screen
- */
+
+void jsloop_advance(const struct timespec* cur_time, struct timespec* last_tick, struct timespec* next_tick) {
+    next_tick->tv_sec = last_tick->tv_sec + (last_tick->tv_nsec + axis_time) / BILLION;
+    next_tick->tv_nsec = (last_tick->tv_nsec + axis_time) % BILLION;
+    if (next_tick->tv_sec < cur_time->tv_sec ||
+        (next_tick->tv_sec == cur_time->tv_sec && next_tick->tv_nsec < cur_time->tv_nsec)) {
+        /* we're far enough behind that advancing by a single tick doesn't catch us up */
+        next_tick->tv_sec = cur_time->tv_sec;
+        next_tick->tv_nsec = cur_time->tv_nsec;
+    }
+    last_tick->tv_sec = cur_time->tv_sec;
+    last_tick->tv_nsec = cur_time->tv_nsec;
+}
+void jsloop_until(const struct timespec* cur_time, const struct timespec* next_tick, struct timespec* until_next_tick) {
+    long int dsec = next_tick->tv_sec - cur_time->tv_sec;
+    long int dnsec = dsec * BILLION + next_tick->tv_nsec - cur_time->tv_nsec;
+    until_next_tick->tv_sec = dnsec / BILLION;
+    until_next_tick->tv_nsec = dnsec % BILLION;
+    if (until_next_tick->tv_sec < 0 || (until_next_tick->tv_sec == 0 && until_next_tick->tv_nsec < 0)) {
+        until_next_tick->tv_sec = 0;
+        until_next_tick->tv_nsec = 0;
+    }
+}
 
 
 /* main event loop: call this and it will run forever, listening for
  * joystick inputs and running your code when it gets them */
-void joystick_loop(SCM joysticks) {
-    /* open joystick devices */
-    /* main loop */
+void joystick_loop(SCM jsdevice, SCM jsmap) {
+    /* use the input from guile to build up keymap. */
+    keymap_t kmap = build_keymap_from_scm_alist(jsmap);
+
+    /* open the joystick device */
+    /* we're only waiting on one joystick at a time for now, so we're
+     * going to use a single variable and hardcode the struct for the
+     * poll. TODO: handle multiple joysticks. */
+    char* jsdevice_c = scm_to_locale_string(jsdevice);
+    int jsfd = open(jsdevice_c, O_RDONLY);
+    free(jsdevice_c);
+
+    /* set up variables for main loop */
+    nfds_t npollfds = 1;
+    struct pollfd* pollfds = malloc(npollfds * sizeof(struct pollfd));
+    pollfds[0].fd = jsfd;
+    pollfds[0].events = POLLIN;
+
+    int last_poll_result;
+    struct timespec cur_time;
+    struct timespec last_tick;
+    struct timespec next_tick;
+    struct timespec until_next_tick = {0,0};
+    clock_gettime(CLOCK_MONOTONIC, &cur_time);
+    clock_gettime(CLOCK_MONOTONIC, &last_tick);
+    clock_gettime(CLOCK_MONOTONIC, &next_tick);
+    jsloop_advance(&cur_time, &last_tick, &next_tick);
+    jsloop_until(&cur_time, &next_tick, &until_next_tick);
+
+    int loops = 0;
+
+    /* run the main loop */
     while(1) {
-        /*   sleep until next tick */
-        /*   read all the joystick devices to grab any new events */
-        /*   dispatch button state changes to handlers */
-        /*   dispatch dt and axis state to each axis handler */
+        /* wait either until the next tick comes around or we get an event */
+        last_poll_result = ppoll(pollfds, npollfds, &until_next_tick, NULL);
+        clock_gettime(CLOCK_MONOTONIC, &cur_time);
+
+        if (last_poll_result > 0) { /* we got an event */
+            /* read a js event out of the file descriptor */
+            struct js_event e;
+            for(unsigned int i = 0; i < npollfds; i++) {
+                if (pollfds[i].revents & POLLIN) {
+                    /* we got data! */
+                    /* read and process the event, dispatch to the user's bindings */
+                    int result = read (pollfds[i].fd, &e, sizeof(struct js_event));
+                }
+                if (pollfds[i].revents & (POLLNVAL | POLLHUP | POLLERR)) {
+                    /* something else happened, print it and exit */
+                    printf("joystick loop: bad result from polling js%d: %x\n", i, pollfds[i].revents);
+                }
+            }
+
+            /* update how long to wait until the next tick */
+            jsloop_until(&cur_time, &next_tick, &until_next_tick);
+        }
+        else if (last_poll_result == 0) { /* we timed out */
+            /* compute a precise dt and send axis state to each axis handler */
+
+            /* update how long to wait until the next tick */
+            jsloop_advance(&cur_time, &last_tick, &next_tick);
+            jsloop_until(&cur_time, &next_tick, &until_next_tick);
+        }
+        else { /* some kind of error */
+            /* we were probably just interrupted by a signal. let the
+             * program handle it as normal; we continue with our
+             * looping. */
+            int errsv = errno;
+            char* errstring = strerror(errsv);
+            printf("An error occurred while reading js: %s\n", errstring);
+            free(errstring);
+            /* update how long to wait until the next tick */
+            jsloop_until(&cur_time, &next_tick, &until_next_tick);
+        }
+        printf("it: %d \tres: %d\t#c,s: %d\t|c,ns: %d\t#n,s: %d\t|n,ns: %d\t#u,s: %d\t|u,n: %d\n",
+               loops, last_poll_result,
+               (int)cur_time.tv_sec, (int)cur_time.tv_nsec,
+               (int)next_tick.tv_sec, (int)next_tick.tv_nsec,
+               (int)until_next_tick.tv_sec, (int)until_next_tick.tv_nsec);
+
+        if(loops++ >= 99) break;
     }
-    /* end loop */
+    /* end loop - we should probably never reach this code */
+
+    free(pollfds);              /* just to be safe */
+
+    exit(0);
 }
 
 void inner_main(void* data, int argc, char** argv) {
@@ -81,7 +172,7 @@ void inner_main(void* data, int argc, char** argv) {
     scm_c_define_gsubr("xbindjoy-send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
 
     /* and the loop */
-    scm_c_define_gsubr("xbindjoy-start", 1, 0, 0, joystick_loop);
+    scm_c_define_gsubr("xbindjoy-start", 2, 0, 0, joystick_loop);
 
     /* and finally start reading lisp */
     scm_shell(argc, argv);
