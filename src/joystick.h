@@ -19,20 +19,42 @@
 
 #pragma once
 
+#include <linux/joystick.h>
 #include "xbindjoy.h"
 
-char* get_joystick_name(char* iodev);
-SCM get_joystick_name_wrapper(SCM iodev);
 
+/* data structures for binding keys */
 typedef struct {
     int key_index;
-    key_action_e key_action;
+    int is_press;
     SCM function;
-} mapping_t;
+} bind_key_t;
 
 typedef struct {
     size_t nkeys;
-    mapping_t* maps;
+    bind_key_t* keys;
 } keymap_t;
 
-keymap_t build_keymap_from_scm_alist(SCM keymap);
+
+/* data structures for binding axes */
+typedef struct {
+    int axis_index;
+    uint8_t current_value;
+    SCM function;
+} bind_axis_t;
+
+typedef struct {
+    int naxes;
+    bind_axis_t* axes;
+} axismap_t;
+
+
+/* functions */
+char* get_joystick_name(char* iodev);
+SCM get_joystick_name_wrapper(SCM iodev);
+
+keymap_t* build_keymap_from_scm_alist(SCM kmap_alist);
+int dispatch_keys(keymap_t* kmap, struct js_event e);
+
+axismap_t* build_axismap_from_scm_alist(SCM amap_alist);
+int dispatch_axis(axismap_t* amap, struct js_event e);

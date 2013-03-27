@@ -27,6 +27,8 @@
 #include "xbindjoy.h"
 #include "joystick.h"
 
+/* ************************************************* */
+/* device name handling */
 
 char* get_joystick_name(char* iodev) {
 
@@ -51,5 +53,62 @@ SCM get_joystick_name_wrapper(SCM iodev) {
     return result;
 }
 
-keymap_t build_keymap_from_scm_alist(SCM keymap) {
+
+/* ************************************************* */
+/* key mapping */
+
+void build_key(SCM pair, bind_key_t* key) {
+    SCM action = scm_caar(pair);
+    SCM index = scm_cdar(pair);
+    SCM proc = scm_cdr(pair);
+    
+    char* action_c = scm_to_locale_string(scm_symbol_to_string(action));
+    key->is_press = strcmp(action_c, "press") == 0;
+    free(action_c);
+
+    key->key_index = scm_to_int(index);
+    key->function = proc;
+
+    if(verbose)
+        printf("build_key: binding %d %s\n", key->key_index, key->is_press?"down":"up");
+}
+
+keymap_t* build_keymap_from_scm_alist(SCM kmap_alist) {
+    keymap_t* result = malloc(sizeof(keymap_t));
+    result->nkeys = scm_to_int(scm_length(kmap_alist));
+    result->keys = malloc(result->nkeys * sizeof(bind_key_t));
+
+    if (verbose)
+        printf("build_keymap_from_scm_alist: building keymap out of alist of length %d\n", (int)result->nkeys);
+
+    SCM cur = kmap_alist;
+    int idx = 0;
+    while (!scm_is_null(cur)) {
+        build_key(scm_car(cur), result->keys + (idx++));
+        cur = scm_cdr(cur);
+    }
+
+    return result;
+}
+
+int dispatch_keys(keymap_t* kmap, struct js_event e) {
+    
+}
+
+
+/* ************************************************* */
+/* axis mapping */
+
+axismap_t* build_axismap_from_scm_alist(SCM amap_alist) {
+    axismap_t* result = malloc(sizeof(axismap_t*));
+    result->naxes = scm_to_int(scm_length(amap_alist));
+    result->axes = malloc(result->naxes * sizeof(bind_axis_t));
+
+    if (verbose)
+        printf("build_axismap_from_scm_alist: building axismap out of alist of length %d\n", (int)result->naxes);
+    
+    return result;
+}
+
+int dispatch_axis(axismap_t* amap, struct js_event e) {
 }
