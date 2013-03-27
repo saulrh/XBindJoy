@@ -78,6 +78,9 @@ void joystick_loop(SCM jsdevice, SCM jsmap) {
     int loops = 0;
     double dt;
 
+    if(verbose)
+        printf("joystick_loop: starting main loop!\n");
+
     /* run the main loop */
     while(1) {
         /* wait either until the next tick comes around or we get an event */
@@ -117,14 +120,6 @@ void joystick_loop(SCM jsdevice, SCM jsmap) {
         /* update time structures */
         last_tick.tv_sec = cur_time.tv_sec;
         last_tick.tv_nsec = cur_time.tv_nsec;
-
-        if (verbose)
-            printf("it: %-5d res: %-5d last: %-15f cur: %-15f this wait was: %-15f inst freq: %15f\n",
-                   loops, last_poll_result,
-                   (double)last_tick.tv_sec + (double)last_tick.tv_nsec / BILLION,
-                   (double)cur_time.tv_sec + (double)cur_time.tv_nsec / BILLION,
-                   dt,
-                   1.0/dt);
     }
     /* end loop - we should probably never reach this code */
 
