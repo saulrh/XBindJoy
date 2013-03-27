@@ -91,7 +91,7 @@ keymap_t* build_keymap_from_scm_alist(SCM kmap_alist) {
     return result;
 }
 
-int dispatch_keys(keymap_t* kmap, struct js_event e) {
+int handle_and_dispatch_keys(keymap_t* kmap, struct js_event e) {
     
 }
 
@@ -110,5 +110,8 @@ axismap_t* build_axismap_from_scm_alist(SCM amap_alist) {
     return result;
 }
 
-int dispatch_axis(axismap_t* amap, struct js_event e) {
+int handle_axis(axismap_t* amap, struct js_event e) {
+}
+
+int dispatch_axis(axismap_t* amap, double dt) {
 }

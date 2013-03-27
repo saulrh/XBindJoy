@@ -95,6 +95,13 @@ void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axismap_alist) {
                 if (pollfds[i].revents & POLLIN) { /* we got data! */
                     /* read and process the event, dispatch to the user's bindings */
                     int result = read (pollfds[i].fd, &e, sizeof(struct js_event));
+                    if (result > 0) /* just to be safe */
+                        if (e.type == JS_EVENT_BUTTON) {
+                            handle_and_dispatch_keys(kmap, e);
+                        }
+                        else if (e.type == JS_EVENT_AXIS) {
+                            handle_axis(amap, e);
+                        }
                 }
                 if (pollfds[i].revents & (POLLNVAL | POLLHUP | POLLERR)) {
                     /* something else happened, print it and ignore*/
@@ -112,11 +119,12 @@ void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axismap_alist) {
             free(errstring);
         }
         /* last_poll_result == 0 means we timed out, which is fine */
-
-        /* either way, compute a dt and send axis state to
-         * each axis handler */
+        
+        /* either way, we need to dispatch an axis update, so compute
+         * dt and make the call */
         dt = (double)(cur_time.tv_sec - last_tick.tv_sec)
             + (double)(cur_time.tv_nsec - last_tick.tv_nsec) / BILLION;
+        dispatch_axis(amap, dt);
 
         /* update time structures */
         last_tick.tv_sec = cur_time.tv_sec;
