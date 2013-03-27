@@ -43,22 +43,22 @@
 (define-key stratcom '(release . 1) (lambda () (xbindjoy-send-key '(release . L))))
 
 ;;; as above, but we use the bind-key special form to automate the syntax
-(bind-key stratcom 2 "K")
+(bind-key stratcom 2 K)
 
 ;;; something more complicated - remember the state of button 3 and
 ;;; use to to make button 4 do different things if it's pressed with
 ;;; or without button 3 down.
-(define button-2-down #f)
-(define-key stratcom '(press . 3) (lambda () (set! button-2-down #t)))
-(define-key stratcom '(release . 3) (lambda () (set! button-2-down #f)))
+(define button-3-down #f)
+(define-key stratcom '(press . 3) (lambda () (set! button-3-down #t)))
+(define-key stratcom '(release . 3) (lambda () (set! button-3-down #f)))
 (define-key stratcom '(press . 4)
-  (lambda () (if button-2-down
-                 (lambda () (xbindjoy-send-keyseq '((press . Shift_L)
-                                                     (press . K)
-                                                     (release . K)
-                                                     (release . Shift_L))))
-                 (lambda () (xbindjoy-send-keyseq '((press . K)
-                                                    (release . K)))))))
+  (lambda () (if button-3-down
+                 (xbindjoy-send-keyseq '((press . Shift_L)
+                                         (press . K)
+                                         (release . K)
+                                         (release . Shift_L)))
+                 (xbindjoy-send-keyseq '((press . K)
+                                         (release . K))))))
 
 ;;; and finally we feed xbindjoy our keymap and the joystick device to
 ;;; xbindjoy so it can start processing. Make sure that this is the
