@@ -29,18 +29,18 @@
 
 /* ************************************************* */
 /* code that actually does things */
-int send_key(KeyCode xkeycode, int is_down) {
+int send_key(KeyCode xkeycode, int is_press) {
     if (verbose)
-        printf("send_key %s: sending a %d\n", is_down?"down":"up",(unsigned int)xkeycode);
-    int result = XTestFakeKeyEvent(display, (unsigned int)xkeycode, is_down, 0);
+        printf("send_key %s: sending a %d\n", is_press?"down":"up",(unsigned int)xkeycode);
+    int result = XTestFakeKeyEvent(display, (unsigned int)xkeycode, is_press, 0);
     XFlush(display);
     return result;
 }
 
-int send_button(int xbuttoncode, int is_down) {
+int send_button(int xbuttoncode, int is_press) {
     if (verbose)
-        printf("send_button %s: sending a %d\n", is_down?"down":"up",(unsigned int)xbuttoncode);
-    int result = XTestFakeButtonEvent(display, (unsigned int)xbuttoncode, is_down, 0);
+        printf("send_button %s: sending a %d\n", is_press?"down":"up",(unsigned int)xbuttoncode);
+    int result = XTestFakeButtonEvent(display, (unsigned int)xbuttoncode, is_press, 0);
     XFlush(display);
     return result;
 }

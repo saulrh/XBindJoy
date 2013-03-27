@@ -19,8 +19,8 @@
 
 #pragma once
 
-int send_key(KeyCode xkeycode, int is_down);
-int send_button(int xbuttoncode, int is_down);
+int send_key(KeyCode xkeycode, int is_press);
+int send_button(int xbuttoncode, int is_press);
 int send_mouserel(int x, int y);
 int send_mouseabs(int x, int y);
 
