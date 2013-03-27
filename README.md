@@ -18,6 +18,7 @@ About
 Example uses
 ============
 
+* Use your gamepad with any game, even ones that don't understand joysticks
 * Bind joystick axes to mouse movement for aiming in FPS games
 * Turn any joystick into a chorded keyboard + mouse combo
 * Joystick macros everywhere For Great Real-Time Strategy Justice
