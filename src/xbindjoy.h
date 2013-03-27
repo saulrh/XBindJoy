@@ -33,7 +33,9 @@ RELEASE
 
 
 
-long int axis_time; /* how many nanoseconds to wait between sending axis
-                     * updates to the user's code. in normal use cases,
-                     * specifies - approximately! - the frequency with
-                     * which the mouse will update from the joystick. */
+struct timespec axis_freq; /* the maximum allowed time between axis
+                            * updates being sent back to guile for
+                            * processing. This is useful because it
+                            * establishes a lower limit on the
+                            * frequency of mouse movements, which
+                            * helps makes things smoother. */

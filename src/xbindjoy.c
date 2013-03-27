@@ -47,30 +47,6 @@
 /*   sender contains functions for sending x events */
 
 
-void jsloop_advance(const struct timespec* cur_time, struct timespec* last_tick, struct timespec* next_tick) {
-    next_tick->tv_sec = last_tick->tv_sec + (last_tick->tv_nsec + axis_time) / BILLION;
-    next_tick->tv_nsec = (last_tick->tv_nsec + axis_time) % BILLION;
-    if (next_tick->tv_sec < cur_time->tv_sec ||
-        (next_tick->tv_sec == cur_time->tv_sec && next_tick->tv_nsec < cur_time->tv_nsec)) {
-        /* we're far enough behind that advancing by a single tick doesn't catch us up */
-        next_tick->tv_sec = cur_time->tv_sec;
-        next_tick->tv_nsec = cur_time->tv_nsec;
-    }
-    last_tick->tv_sec = cur_time->tv_sec;
-    last_tick->tv_nsec = cur_time->tv_nsec;
-}
-void jsloop_until(const struct timespec* cur_time, const struct timespec* next_tick, struct timespec* until_next_tick) {
-    long int dsec = next_tick->tv_sec - cur_time->tv_sec;
-    long int dnsec = dsec * BILLION + next_tick->tv_nsec - cur_time->tv_nsec;
-    until_next_tick->tv_sec = dnsec / BILLION;
-    until_next_tick->tv_nsec = dnsec % BILLION;
-    if (until_next_tick->tv_sec < 0 || (until_next_tick->tv_sec == 0 && until_next_tick->tv_nsec < 0)) {
-        until_next_tick->tv_sec = 0;
-        until_next_tick->tv_nsec = 0;
-    }
-}
-
-
 /* main event loop: call this and it will run forever, listening for
  * joystick inputs and running your code when it gets them */
 void joystick_loop(SCM jsdevice, SCM jsmap) {
@@ -94,48 +70,35 @@ void joystick_loop(SCM jsdevice, SCM jsmap) {
     int last_poll_result;
     struct timespec cur_time;
     struct timespec last_tick;
-    struct timespec next_tick;
-    struct timespec until_next_tick = {0,0};
+    struct timespec max_time_between_ticks;
+    
     clock_gettime(CLOCK_MONOTONIC, &cur_time);
     clock_gettime(CLOCK_MONOTONIC, &last_tick);
-    clock_gettime(CLOCK_MONOTONIC, &next_tick);
-    jsloop_advance(&cur_time, &last_tick, &next_tick);
-    jsloop_until(&cur_time, &next_tick, &until_next_tick);
-
+    
     int loops = 0;
+    double dt;
 
     /* run the main loop */
     while(1) {
         /* wait either until the next tick comes around or we get an event */
-        last_poll_result = ppoll(pollfds, npollfds, &until_next_tick, NULL);
+        last_poll_result = ppoll(pollfds, npollfds, &axis_freq, NULL);
         clock_gettime(CLOCK_MONOTONIC, &cur_time);
 
         if (last_poll_result > 0) { /* we got an event */
             /* read a js event out of the file descriptor */
             struct js_event e;
             for(unsigned int i = 0; i < npollfds; i++) {
-                if (pollfds[i].revents & POLLIN) {
-                    /* we got data! */
+                if (pollfds[i].revents & POLLIN) { /* we got data! */
                     /* read and process the event, dispatch to the user's bindings */
                     int result = read (pollfds[i].fd, &e, sizeof(struct js_event));
                 }
                 if (pollfds[i].revents & (POLLNVAL | POLLHUP | POLLERR)) {
-                    /* something else happened, print it and exit */
+                    /* something else happened, print it and ignore*/
                     printf("joystick loop: bad result from polling js%d: %x\n", i, pollfds[i].revents);
                 }
             }
-
-            /* update how long to wait until the next tick */
-            jsloop_until(&cur_time, &next_tick, &until_next_tick);
         }
-        else if (last_poll_result == 0) { /* we timed out */
-            /* compute a precise dt and send axis state to each axis handler */
-
-            /* update how long to wait until the next tick */
-            jsloop_advance(&cur_time, &last_tick, &next_tick);
-            jsloop_until(&cur_time, &next_tick, &until_next_tick);
-        }
-        else { /* some kind of error */
+        else if (last_poll_result < 0) { /* some kind of error */
             /* we were probably just interrupted by a signal. let the
              * program handle it as normal; we continue with our
              * looping. */
@@ -143,16 +106,25 @@ void joystick_loop(SCM jsdevice, SCM jsmap) {
             char* errstring = strerror(errsv);
             printf("An error occurred while reading js: %s\n", errstring);
             free(errstring);
-            /* update how long to wait until the next tick */
-            jsloop_until(&cur_time, &next_tick, &until_next_tick);
         }
-        printf("it: %d \tres: %d\t#c,s: %d\t|c,ns: %d\t#n,s: %d\t|n,ns: %d\t#u,s: %d\t|u,n: %d\n",
-               loops, last_poll_result,
-               (int)cur_time.tv_sec, (int)cur_time.tv_nsec,
-               (int)next_tick.tv_sec, (int)next_tick.tv_nsec,
-               (int)until_next_tick.tv_sec, (int)until_next_tick.tv_nsec);
+        /* last_poll_result == 0 means we timed out, which is fine */
 
-        if(loops++ >= 99) break;
+        /* either way, compute a dt and send axis state to
+         * each axis handler */
+        dt = (double)(cur_time.tv_sec - last_tick.tv_sec)
+            + (double)(cur_time.tv_nsec - last_tick.tv_nsec) / BILLION;
+
+        /* update time structures */
+        last_tick.tv_sec = cur_time.tv_sec;
+        last_tick.tv_nsec = cur_time.tv_nsec;
+
+        if (verbose)
+            printf("it: %-5d res: %-5d last: %-15f cur: %-15f this wait was: %-15f inst freq: %15f\n",
+                   loops, last_poll_result,
+                   (double)last_tick.tv_sec + (double)last_tick.tv_nsec / BILLION,
+                   (double)cur_time.tv_sec + (double)cur_time.tv_nsec / BILLION,
+                   dt,
+                   1.0/dt);
     }
     /* end loop - we should probably never reach this code */
 
@@ -180,7 +152,11 @@ void inner_main(void* data, int argc, char** argv) {
 
 int main(int argc, char** argv) {
     /* set up variables */
-    axis_time = (1000 * 1000 * 1000);
+    axis_freq.tv_sec = 0;
+    axis_freq.tv_nsec = BILLION / 80; /* this is about as fast as the
+                                       * scheduler is willing to do
+                                       * when async IO isn't
+                                       * involved */
     verbose = 1;
     display = XOpenDisplay(getenv("DISPLAY"));
 
