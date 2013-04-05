@@ -146,13 +146,13 @@ void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axis_func) {
 void inner_main(void* data, int argc, char** argv) {
     /* for figuring out joystick parameters */
     scm_c_define_gsubr("device->jsname", 1, 0, 0, get_joystick_name_wrapper);
-    scm_c_define_gsubr("xbindjoy-get-js-num-axes", 1, 0, 0, get_joystick_num_axes_wrapper);
+    scm_c_define_gsubr("get-js-num-axes", 1, 0, 0, get_joystick_num_axes_wrapper);
 
     /* for sending x events to the screen */
-    scm_c_define_gsubr("xbindjoy-send-key", 3, 0, 0, send_key_wrapper);
-    scm_c_define_gsubr("xbindjoy-send-button", 3, 0, 0, send_button_wrapper);
-    scm_c_define_gsubr("xbindjoy-send-mouserel", 2, 0, 0, send_mouserel_wrapper);
-    scm_c_define_gsubr("xbindjoy-send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
+    scm_c_define_gsubr("send-key", 3, 0, 0, send_key_wrapper);
+    scm_c_define_gsubr("send-button", 3, 0, 0, send_button_wrapper);
+    scm_c_define_gsubr("send-mouserel", 2, 0, 0, send_mouserel_wrapper);
+    scm_c_define_gsubr("send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
 
     /* and the loop */
     scm_c_define_gsubr("xbindjoy-start", 3, 0, 0, joystick_loop);
