@@ -29,18 +29,18 @@
 
 /* ************************************************* */
 /* code that actually does things */
-int send_key(KeyCode xkeycode, int is_press) {
+int send_key(KeyCode xkeycode, int is_press, int delayms) {
     if (verbose)
         printf("send_key %s: sending a %d\n", is_press?"down":"up",(unsigned int)xkeycode);
-    int result = XTestFakeKeyEvent(display, (unsigned int)xkeycode, is_press, 0);
+    int result = XTestFakeKeyEvent(display, (unsigned int)xkeycode, is_press, delayms);
     XFlush(display);
     return result;
 }
 
-int send_button(int xbuttoncode, int is_press) {
+int send_button(int xbuttoncode, int is_press, int delayms) {
     if (verbose)
         printf("send_button %s: sending a %d\n", is_press?"down":"up",(unsigned int)xbuttoncode);
-    int result = XTestFakeButtonEvent(display, (unsigned int)xbuttoncode, is_press, 0);
+    int result = XTestFakeButtonEvent(display, (unsigned int)xbuttoncode, is_press, delayms);
     XFlush(display);
     return result;
 }
@@ -97,32 +97,42 @@ KeyCode xkey_scm_to_keycode(SCM xkey) {
 
 
 
-SCM send_key_wrapper(SCM xkey) {
+SCM send_key_wrapper(SCM action, SCM xkey, SCM delay) {
     KeyCode keycode;
-    keycode = xkey_scm_to_keycode(SCM_CDR(xkey));
+    keycode = xkey_scm_to_keycode(xkey);
     if (keycode == -1)          /* couldn't find an appropriate keysym */
         /* TODO: perhaps throw an out-of-range error here? */
 	return SCM_BOOL_F;
+
+    int delayms;
+    if (delay == SCM_UNDEFINED) delayms = 0;
+    else delayms = scm_to_int(delay);
     
     /* actually send the press, return result */
     int result;
-    char* action = scm_to_locale_string(scm_symbol_to_string(SCM_CAR(xkey)));
+    char* action_string = scm_to_locale_string(scm_symbol_to_string(action));
     result = send_key(keycode,
-                      strcmp(action, "press") == 0);
-    free(action);
+                      strcmp(action_string, "press") == 0,
+                      delayms);
+    free(action_string);
 
     if (verbose)
         printf("send_keydown_wrapper: result was: %d\n", result);
     if (result) return SCM_BOOL_T;
     return SCM_BOOL_F;
 }
-SCM send_button_wrapper(SCM xkey) {
-    int result;
-    char* action = scm_to_locale_string(scm_symbol_to_string(SCM_CAR(xkey)));
-    result = send_button(scm_to_int(SCM_CDR(xkey)),
-                         strcmp(action, "press") == 0);
-    free(action);
+SCM send_button_wrapper(SCM action, SCM xbutton, SCM delay) {
+    int delayms;
+    if (delay == SCM_UNDEFINED) delayms = 0;
+    else delayms = scm_to_int(delay);
 
+    int result;
+    char* action_string = scm_to_locale_string(scm_symbol_to_string(action));
+    result = send_button(scm_to_int(xbutton),
+                         strcmp(action_string, "press") == 0,
+                         delayms);
+    free(action_string);
+    
     if (verbose)
         printf("send_keydown_wrapper: result was: %d\n", result);
     if (result) return SCM_BOOL_T;

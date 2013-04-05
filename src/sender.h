@@ -19,13 +19,13 @@
 
 #pragma once
 
-int send_key(KeyCode xkeycode, int is_press);
-int send_button(int xbuttoncode, int is_press);
+int send_key(KeyCode xkeycode, int is_press, int delayms);
+int send_button(int xbuttoncode, int is_press, int delayms);
 int send_mouserel(int x, int y);
 int send_mouseabs(int x, int y);
 
 
-SCM send_key_wrapper(SCM xkey);
-SCM send_button_wrapper(SCM xbuttoncode);
+SCM send_key_wrapper(SCM action, SCM xkey, SCM delay);
+SCM send_button_wrapper(SCM action, SCM xbutton, SCM delay);
 SCM send_mouserel_wrapper(SCM x, SCM y);
 SCM send_mouseabs_wrapper(SCM x, SCM y);

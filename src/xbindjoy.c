@@ -149,8 +149,8 @@ void inner_main(void* data, int argc, char** argv) {
     scm_c_define_gsubr("xbindjoy-get-js-num-axes", 1, 0, 0, get_joystick_num_axes_wrapper);
 
     /* for sending x events to the screen */
-    scm_c_define_gsubr("xbindjoy-send-key", 1, 0, 0, send_key_wrapper);
-    scm_c_define_gsubr("xbindjoy-send-button", 1, 0, 0, send_button_wrapper);
+    scm_c_define_gsubr("xbindjoy-send-key", 3, 0, 0, send_key_wrapper);
+    scm_c_define_gsubr("xbindjoy-send-button", 3, 0, 0, send_button_wrapper);
     scm_c_define_gsubr("xbindjoy-send-mouserel", 2, 0, 0, send_mouserel_wrapper);
     scm_c_define_gsubr("xbindjoy-send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
 
