@@ -1,13 +1,21 @@
-#!../build/xbindjoy \
--s
+#!/usr/bin/guile \
+--no-auto-compile -s
 !#
 
-;;; load up some things to make everything cleaner
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; better list-processing stuff
 (use-modules (srfi srfi-1))
-(include "helpers.scm")
+
+;;; better printing
+(use-modules (ice-9 pretty-print))
+(use-modules (ice-9 format))
+
+;;; and finally the xbindjoy library
+(add-to-load-path (dirname (current-filename)))
+(use-modules (saulrh xbindjoy))
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; configuration stuff
+;;; define some shorthand for a strategic commander
 
 (define sc-f1 0)
 (define sc-f2 1)
@@ -36,91 +44,85 @@
 
 (define stratcom-key '())
 
-(define last-axis-vals-alist `((,sc-x . 0) (,sc-y . 0) (,sc-r . 0)))
-(define cur-axis-vals-alist `((,sc-x . 0) (,sc-y . 0) (,sc-r . 0)))
-
-;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; helper functions
-
-(define (transition axis thresh to+)
-  (let ((cur (assoc-ref cur-axis-vals-alist axis))
-        (last (assoc-ref last-axis-vals-alist axis))
-        (pred (if to+ > <)))
-    (and (pred thresh last) (not (pred thresh cur)))))
-
-(define (move-region axis a b key)
-  (let ((lower (min a b))
-        (upper (max a b)))
-    (if (transition axis lower #t) (send-key 'press key 0))
-    (if (transition axis lower #f) (send-key 'release key 0))
-    (if (transition axis upper #t) (send-key 'release key 0))
-    (if (transition axis upper #f) (send-key 'press key 0))))
-
-
-;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; simple keybindings
-
-;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; more complicated stuff
-
-
 (define mod-top #f)
 (define mod-mid #f)
 (define mod-bot #f)
 
-(define (get-mod-top) mod-top)
-(define (get-mod-mid) mod-mid)
-(define (get-mod-bot) mod-bot)
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; helper functions
 
+(define (sign x)
+  (if (positive? x) 1 -1))
+
+(define (display-n x)
+  (display x) (newline))
+
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; simple keybindings
+
+;;; bind our mod variables to the appropriate keys
 (define-shift stratcom-key sc-thtop mod-top)
 (define-shift stratcom-key sc-thmid mod-mid)
 (define-shift stratcom-key sc-thbot mod-bot)
 
-(define shift-down #f)
-(define (toggle-shift)
-  (if shift-down
-      (send-key 'release 'Shift_L 0)
-      (send-key 'press 'Shift_L 0))
-  (set! shift-down (not shift-down)))
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; more complicated stuff
 
-(define-key stratcom-key `(press . ,sc-f4)
-  (lambda () (cond (mod-top '())
-                   (mod-mid '())
-                   (mod-bot '())
-                   (else (toggle-shift)))))
+(define toggle-shift (build-send-key-toggler 'Shift_L #f))
 
-(for-each (lambda (map-pair) (let* ((target (car map-pair))
-                                    (result (cdr map-pair))
-                                    (action (car target))
-                                    (modifiers (cadr target))
-                                    (key (caddr target)))
-                               (define-key stratcom-key (cons action key)
-                                        ;(lambda () (if (any values modifiers) (apply xbindjoy-send-key result)))
-                                 (lambda () (begin (display (map (lambda (a) (apply (eval a (interaction-environment)) '())) modifiers))
-                                                   (display result)
-                                                   (newline)))
-                                 )))
-          `(((press () ,sc-f1) . (press J 0))
-            ((release () ,sc-f1) . (release J 0))
-            ((press (get-mod-top) ,sc-f1) . (press K 0))
-            ((release (get-mod-top) ,sc-f1) . (release K 0))))
-
+(define-key-when stratcom-key (cons 'press sc-f1) (list)
+  (display-n "sc-f1 down"))
+(define-key-when stratcom-key (cons 'release sc-f1) (list)
+  (display-n "sc-f1 up"))
+(define-key-when stratcom-key (cons 'press sc-f4) (list (not mod-top) (not mod-mid) (not mod-bot))
+  (toggle-shift))
+(define-key-when stratcom-key (cons 'press sc-f2) (list mod-top mod-mid)
+  (display-n "mod-top, mod-mid"))
+(define-key-when stratcom-key (cons 'press sc-f3) (list mod-top (not mod-mid))
+  (display-n "mod-top, !mod-mid"))
+(define-key-when stratcom-key (cons 'press sc-f5) (list (not mod-mid))
+  (display-n "!mod-mid"))
+(define-key-when stratcom-key (cons 'press sc-f6) (list)
+  (begin (send-key 'press 'A 0)
+         (send-key 'release 'A 5)
+         (send-key 'press 'B 10)
+         (send-key 'release 'B 5)
+         (send-key 'press 'C 10)
+         (send-key 'release 'C 5)
+         (send-key 'press 'D 10)
+         (send-key 'release 'D 5)
+         (send-key 'press 'E 10)
+         (send-key 'release 'E 5)))
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; axis handling
 
-(define (stratcom-axis axis-vals-alist)
-  (begin (set! cur-axis-vals-alist (scale-vals-alist axis-vals-alist))
-         (move-region sc-x +0.2 +1.1 'D)
-         (move-region sc-x -0.2 -1.1 'A)
-         (move-region sc-y +0.2 +1.1 'S)
-         (move-region sc-y -0.2 -1.1 'W)
-         (if (transition sc-y -0.95 #f) (send-keyseq '((release W 0)
-                                                                (press W 10)
-                                                                (release W 20)
-                                                                (press W 30))))
-         ;(if mod-top (begin (display "mod-top") (newline)))
-         (set! last-axis-vals-alist cur-axis-vals-alist)))
+(set! last-axis-vals-alist `((,sc-x . 0) (,sc-y . 0) (,sc-r . 0)))
+(set! cur-axis-vals-alist `((,sc-x . 0) (,sc-y . 0) (,sc-r . 0)))
+
+(display axis-dt-nominal) (newline)
+
+(define stratcom-axis (axesfun-with-history
+                       (axis-region sc-x +0.2 +1.1 'D)
+                       (axis-region sc-x -0.2 -1.1 'A)
+                       (axis-region sc-y +0.2 +1.1 'S)
+                       (axis-region sc-y -0.2 -1.1 'W)
+                       (let ((x-motion
+                              (* 300 axis-dt (expt (assoc-ref cur-axis-vals-alist sc-r) 3))))
+                         (send-mouserel x-motion 0)
+                         (format #t "dt:~a, x movement=~a\n" axis-dt x-motion)
+                         )
+                       (if (axis-transition sc-y -0.95 #f) (send-keyseq '((release W 0)
+                                                                          (press W 10)
+                                                                          (release W 10)
+                                                                          (press W 10))))
+                       
+                       ;; (if mod-top (begin (display "mod-top")))
+                       ;; (if mod-mid (begin (display "mod-mid")))
+                       ;; (if mod-bot (begin (display "mod-bot")))
+                       ))
+
+;; (pretty-print stratcom-key) (newline)
 
 (define jsd (jsname->device "Microsoft Microsoft SideWinder Strategic Commander"))
 (xbindjoy-start jsd stratcom-key stratcom-axis)

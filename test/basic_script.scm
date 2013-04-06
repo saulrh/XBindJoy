@@ -1,9 +1,10 @@
-#!../build/xbindjoy \
+#!/usr/bin/guile \
 -s
 !#
 
 ;;; load up some things to make everything cleaner
-(include "helpers.scm")
+(add-to-load-path (dirname (current-filename)))
+(use-modules (saulrh xbindjoy))
 
 ;;; do some module loads
 (use-modules (ice-9 pretty-print))
@@ -13,6 +14,8 @@
 
 ;;; map a button directly to a key - send a keydown event whenever we
 ;;; get a button 2 down and a keyup whenever we get a button 2 up.
+(define-key stratcom-key '(press . 1) (lambda () (display "1")))
+(define-key stratcom-key '(release . 1) (lambda () (display "2")))
 (define-key stratcom-key '(press . 1) (lambda () (send-key 'press 'L 0)))
 (define-key stratcom-key '(release . 1) (lambda () (send-key 'release 'L 0)))
 
@@ -41,13 +44,16 @@
 (define (sign x)
   (if (positive? x) 1 -1))
 
-(define (stratcom-axis axis-vals-alist)
+(define (stratcom-axis dt axis-vals-alist)
   (let ((x (assoc-ref axis-vals-alist 0))
         (y (assoc-ref axis-vals-alist 1))
         (z (assoc-ref axis-vals-alist 2)))
     (begin (send-mouserel
             (* 30 (sign x) (expt (/ x 32768) 2))
             (* 30 (sign y) (expt (/ y 32768) 2))))))
+
+
+(pretty-print stratcom-key) (newline)
 
 ;;; and finally we feed xbindjoy our keymap and the joystick device to
 ;;; xbindjoy so it can start processing. Make sure that this is the
