@@ -149,7 +149,6 @@ SCM send_mouserel_wrapper(SCM x, SCM y) {
 }
 
 SCM send_mouseabs_wrapper(SCM x, SCM y) {
-    /* TODO: apply dithering instead of simple rounding */
     int result = send_mouseabs((int)round(scm_to_double(x)), (int)round(scm_to_double(y)));
     if (verbose)
         printf("send_mouseabs_wrapper: result was: %d\n", result);

@@ -143,7 +143,22 @@ void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axis_func) {
     exit(0);
 }
 
-void inner_main(void* data, int argc, char** argv) {
+SCM get_axis_freq() {
+    return scm_from_double((double)axis_freq.tv_sec + (double)axis_freq.tv_nsec / (double)BILLION);
+}
+
+void init_xbindjoy(void* data, int argc, char** argv) {
+    /* set up variables */
+    axis_freq.tv_sec = 0;
+    axis_freq.tv_nsec = BILLION / 80; /* this is about as fast as the
+                                       * scheduler is willing to do
+                                       * when IO isn't involved */
+    display = XOpenDisplay(getenv("DISPLAY"));
+    verbose = 0;
+
+    /* so we can handle axis events properly in guile */
+    scm_c_define_gsubr("xbindjoy-get-axis-freq", 0, 0, 0, get_axis_freq);
+    
     /* for figuring out joystick parameters */
     scm_c_define_gsubr("device->jsname", 1, 0, 0, get_joystick_name_wrapper);
     scm_c_define_gsubr("get-js-num-axes", 1, 0, 0, get_joystick_num_axes_wrapper);
@@ -157,20 +172,11 @@ void inner_main(void* data, int argc, char** argv) {
     /* and the loop */
     scm_c_define_gsubr("xbindjoy-start", 3, 0, 0, joystick_loop);
 
-    /* and finally start reading lisp */
-    scm_shell(argc, argv);
+    /* /\* and finally start reading lisp *\/ */
+    /* scm_shell(argc, argv); */
 }
 
-int main(int argc, char** argv) {
-    /* set up variables */
-    axis_freq.tv_sec = 0;
-    axis_freq.tv_nsec = BILLION / 80; /* this is about as fast as the
-                                       * scheduler is willing to do
-                                       * when async IO isn't
-                                       * involved */
-    verbose = 0;
-    display = XOpenDisplay(getenv("DISPLAY"));
-
-    /* boot up guile */
-    scm_boot_guile(argc, argv, inner_main, NULL);
-}
+/* int main(int argc, char** argv) { */
+/*     /\* boot up guile *\/ */
+/*     scm_boot_guile(argc, argv, inner_main, NULL); */
+/* } */

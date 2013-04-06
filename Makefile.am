@@ -3,7 +3,10 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = @GUILE_CFLAGS@
 AM_LDFLAGS = @GUILE_LDFLAGS@
 
-bin_PROGRAMS = xbindjoy
+# bin_PROGRAMS = xbindjoy
+# xbindjoy_SOURCES = src/xbindjoy.c src/joystick.c src/sender.c
 
-xbindjoy_SOURCES = src/xbindjoy.c src/joystick.c src/sender.c
+libxbindjoy_ladir = ${LIBDIR}/guile/2.0/extensions/
+libxbindjoy_la_LTLIBRARIES = libxbindjoy.la
+libxbindjoy_la_SOURCES = src/xbindjoy.c src/joystick.c src/sender.c
 

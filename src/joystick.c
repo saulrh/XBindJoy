@@ -125,7 +125,7 @@ int dispatch_axes(int* axis_vals, size_t naxes, double dt, SCM axis_func) {
     for (size_t i = 0; i < naxes; i++)
         output_alist = scm_acons(scm_from_int(i), scm_from_int(axis_vals[i]), output_alist);
     
-    scm_call(axis_func, output_alist, SCM_UNDEFINED);
+    scm_call(axis_func, scm_from_double(dt), output_alist, SCM_UNDEFINED);
 
     if(verbose) {
         printf("Axis values: ");
