@@ -24,3 +24,12 @@ Example uses
 * Joystick macros everywhere For Great Real-Time Strategy Justice
 * Bind window manager functionality to a more ergonomic input device
 * Playing Minecraft? Make crouch a toggle and never fall into lava again
+
+Disclaimer
+==========
+
+I am by no means a software engineer. This code is full of badness and there
+are bugs everywhere. The build system is junk and even if by some
+miracle you manage to get it running you won't be able to install it.
+
+Good luck.
