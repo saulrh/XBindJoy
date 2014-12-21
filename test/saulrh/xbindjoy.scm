@@ -34,7 +34,7 @@
             xbindjoy-start))
 
 ;;; load up the library that provides the low-level stuff
-(load-extension "../build/.libs/libxbindjoy.so" "init_xbindjoy")
+(load-extension "libxbindjoy.so" "init_xbindjoy")
 
 
 ;;; 
