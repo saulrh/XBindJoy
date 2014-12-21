@@ -18,6 +18,7 @@
             define-key-when
             define-shift
             bind-key
+            bind-button
             build-axismap
             ;; functions for working with axes
             axesfun-with-history
@@ -54,6 +55,10 @@
 (define-syntax-rule (bind-key keymap buttoncode keycode delay)
   (begin (define-key keymap (cons 'press buttoncode) (lambda () (send-key 'press keycode delay)))
          (define-key keymap (cons 'release buttoncode) (lambda () (send-key 'release keycode delay)))))
+
+(define-syntax-rule (bind-button keymap jsbutton mousebutton delay)
+  (begin (define-key keymap (cons 'press jsbutton) (lambda () (send-button 'press mousebutton delay)))
+         (define-key keymap (cons 'release jsbutton) (lambda () (send-button 'release mousebutton delay)))))
 
 (define (build-send-key-toggler k init)
   (let ((toggle-var init))
