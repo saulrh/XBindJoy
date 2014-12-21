@@ -104,7 +104,7 @@ keymap_t* build_keymap_from_scm_alist(SCM kmap_alist) {
 }
 
 int handle_and_dispatch_keys(keymap_t* kmap, struct js_event e) {
-    for (size_t i; i < kmap->nkeys; i++) {
+    for (size_t i = 0; i < kmap->nkeys; i++) {
         if (kmap->keys[i].is_press == e.value && kmap->keys[i].key_index == e.number) {
             scm_call(kmap->keys[i].function, SCM_UNDEFINED);
         }
