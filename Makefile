@@ -5,14 +5,14 @@ DESTDIR ?=
 
 # wildcards for src files, object files, and files for tracking which headers everything depends
 # on.
-src = $(wildcard src/*.c)
-obj = $(src:.c=.o)
-dep = $(obj:.o=.d)
+src := $(wildcard src/*.c)
+obj := $(src:.c=.o)
+dep := $(obj:.o=.d)
 
 # compiler flags. we use pkg-config to get the includes for guile. set the variable dbg if we want
 # to compile with debug flags (default to none). ldflags pull in the libraries we need.
-CFLAGS=-std=c11 `pkg-config --cflags guile-2.0` -fPIC $(dbg)
-LDFLAGS=-lX11 -lXtst
+CFLAGS := -std=c11 `pkg-config --cflags guile-2.0` -fPIC $(dbg)
+LDFLAGS := -lX11 -lXtst
 
 # our final shared library.
 libxbindjoy.so: $(obj)
