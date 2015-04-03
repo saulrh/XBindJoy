@@ -53,10 +53,16 @@ SCM get_joystick_name_wrapper(SCM iodev) {
 	return result;
 }
 
+int get_joystick_num_axes_fd(int jsfd) {
+	int naxes;
+	ioctl(jsfd, JSIOCGAXES, &naxes);
+	return naxes;
+}
+
 int get_joystick_num_axes(char* iodev) {
 	int jsfd = open(iodev, O_RDONLY);
-	int naxes;
-	int rvalue = ioctl(jsfd, JSIOCGAXES, &naxes);
+	int naxes = get_joystick_num_axes_fd(jsfd);
+	close(jsfd);
 	return naxes;
 }
 SCM get_joystick_num_axes_wrapper(SCM iodev) {

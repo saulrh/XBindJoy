@@ -40,6 +40,7 @@ typedef struct {
 char* get_joystick_name(char* iodev);
 SCM get_joystick_name_wrapper(SCM iodev);
 
+int get_joystick_num_axes_fd(int jsfd);
 int get_joystick_num_axes(char* iodev);
 SCM get_joystick_num_axes_wrapper(SCM iodev);
 

@@ -99,22 +99,20 @@ SCM joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axis_func) {
 	// allocate space for and build keymap
 	kmap = build_keymap_from_scm_alist(keymap_alist);
 	
-	// figure out how many axes we have, then allocate space for storage and zero them out
-	naxes = scm_to_int(get_joystick_num_axes_wrapper(jsdevice)); /* TODO: FIXME: factor the
-	                                                              * get-num-axes functionality out
-	                                                              * and call it directly so we
-	                                                              * dno't have to stage through
-	                                                              * scheme. */
-	axis_vals = calloc(naxes, sizeof(int));
-	axis_callback = axis_func;
-	
 	/* open the joystick device */
-	/* we're only waiting on one joystick at a time for now, so we're
-	 * going to use a single variable and hardcode the struct for the
-	 * poll. TODO: handle multiple joysticks. */
+	/* we're only waiting on one joystick at a time for now, so we're going to use a single
+	 * variable. TODO: handle multiple joysticks. */
 	char* jsdevice_c = scm_to_locale_string(jsdevice);
 	jsfd = open(jsdevice_c, O_RDONLY);
 	free(jsdevice_c);
+	
+	// allocate an array to hold on to the values for the joystick axes
+	naxes = get_joystick_num_axes_fd(jsfd);
+	axis_vals = calloc(naxes, sizeof(int));
+	
+	// move a pointer to the axis callback to the outside scope so we can call it from the timer
+	// callback
+	axis_callback = axis_func;
 
 	// set up event loop
 	struct ev_loop* loop = ev_default_loop(0);
