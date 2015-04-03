@@ -30,32 +30,24 @@
 /* ************************************************* */
 /* code that actually does things */
 int send_key(KeyCode xkeycode, int is_press, int delayms) {
-	if (verbose)
-		printf("send_key %s: sending a %d\n", is_press?"down":"up",(unsigned int)xkeycode);
 	int result = XTestFakeKeyEvent(display, (unsigned int)xkeycode, is_press, delayms);
 	XFlush(display);
 	return result;
 }
 
 int send_button(int xbuttoncode, int is_press, int delayms) {
-	if (verbose)
-		printf("send_button %s: sending a %d\n", is_press?"down":"up",(unsigned int)xbuttoncode);
 	int result = XTestFakeButtonEvent(display, (unsigned int)xbuttoncode, is_press, delayms);
 	XFlush(display);
 	return result;
 }
 
 int send_mouserel(int x, int y) {
-	if (verbose)
-		printf("send_mouserel: moving mouse by %d %d\n", x, y);
 	int result = XTestFakeRelativeMotionEvent(display, x, y, 0); 
 	XFlush(display);
 	return result;
 }
 
 int send_mouseabs(int x, int y) {
-	if (verbose)
-		printf("send_mouseabs: moving mouse to %d %d\n", x, y);
 	int result = XTestFakeMotionEvent(display, DefaultScreen(display), x, y, 0); 
 	XFlush(display);
 	return result;
@@ -88,8 +80,6 @@ KeyCode xkey_scm_to_keycode(SCM xkey) {
 		}
 		keycode = XKeysymToKeycode(display, keysym);
 	}
-	if (verbose)
-		printf("xkey_scm_to_keycode: keyname '%s' resolves to keycode %d\n", keyname, keycode);
 
 	free(keyname);
 	return keycode;
@@ -116,8 +106,6 @@ SCM send_key_wrapper(SCM action, SCM xkey, SCM delay) {
 	                  delayms);
 	free(action_string);
 
-	if (verbose)
-		printf("send_keydown_wrapper: result was: %d\n", result);
 	if (result) return SCM_BOOL_T;
 	return SCM_BOOL_F;
 }
@@ -133,8 +121,6 @@ SCM send_button_wrapper(SCM action, SCM xbutton, SCM delay) {
 	                     delayms);
 	free(action_string);
     
-	if (verbose)
-		printf("send_keydown_wrapper: result was: %d\n", result);
 	if (result) return SCM_BOOL_T;
 	return SCM_BOOL_F;
 }
@@ -142,16 +128,12 @@ SCM send_button_wrapper(SCM action, SCM xbutton, SCM delay) {
 SCM send_mouserel_wrapper(SCM x, SCM y) {
 	/* TODO: apply dithering instead of simple rounding */
 	int result = send_mouserel((int)round(scm_to_double(x)), (int)round(scm_to_double(y)));
-	if (verbose)
-		printf("send_mouserel_wrapper: result was: %d\n", result);
 	if (result) return SCM_BOOL_T;
 	else return SCM_BOOL_F;
 }
 
 SCM send_mouseabs_wrapper(SCM x, SCM y) {
 	int result = send_mouseabs((int)round(scm_to_double(x)), (int)round(scm_to_double(y)));
-	if (verbose)
-		printf("send_mouseabs_wrapper: result was: %d\n", result);
 	if (result) return SCM_BOOL_T;
 	else return SCM_BOOL_F;
 }
