@@ -25,14 +25,14 @@
 
 /* data structures for binding keys */
 typedef struct {
-    int key_index;
-    int is_press;
-    SCM function;
+	int key_index;
+	int is_press;
+	SCM function;
 } bind_key_t;
 
 typedef struct {
-    size_t nkeys;
-    bind_key_t* keys;
+	size_t nkeys;
+	bind_key_t* keys;
 } keymap_t;
 
 
