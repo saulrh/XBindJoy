@@ -28,8 +28,7 @@ Example uses
 Disclaimer
 ==========
 
-I am by no means a software engineer. This code is full of badness and there
-are bugs everywhere. The build system is junk and even if by some
-miracle you manage to get it running you won't be able to install it.
-
-Good luck.
+I am by no means a software engineer. This code isn't the best, and
+there are probably bugs lurking in the event logic that will bite you
+when you least expect it. If you find any, feel free to submit a bug
+report.
