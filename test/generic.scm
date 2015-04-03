@@ -52,25 +52,24 @@
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; helper functions
-
 (define (display-n x)
   (display x) (newline))
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; button handling
-
 (define-key js-key `(press . ,bt-a)
-  (lambda () 
-    (display-n "button a down")))
+  (lambda () (display-n "button a down")))
 (define-key js-key `(release . ,bt-a)
-  (lambda () 
-    (display-n "button a up")))
+  (lambda () (display-n "button a up")))
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; axis handling
 (define js-axis (lambda (dt axes-raw)
                   (let ((axes (normalize-jsaxes axes-raw)))
-                    (display-n axes))))
+                    ;; (display-n axes-raw)
+                    ;; (display-n dt)
+                    (display "")
+                    )))
 
 (define jsd (jsname->device "DragonRise Inc.   Generic   USB  Joystick  "))
 (xbindjoy-start jsd js-key js-axis)

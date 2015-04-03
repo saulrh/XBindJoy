@@ -24,18 +24,7 @@
 int verbose;
 Display* display;
 
-
-
 typedef enum {
-PRESS,
-RELEASE
+	PRESS,
+	RELEASE
 } key_action_e;
-
-
-
-struct timespec axis_freq; /* the maximum allowed time between axis
-                            * updates being sent back to guile for
-                            * processing. This is useful because it
-                            * establishes a lower limit on the
-                            * frequency of mouse movements, which
-                            * helps makes things smoother. */

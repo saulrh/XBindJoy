@@ -27,12 +27,9 @@
 
 #include <stdlib.h>
 #include <libguile.h>
-#include <fcntl.h>
-#include <time.h>
-#include <poll.h>
 #include <errno.h>
-#include <linux/joystick.h>
-#include <assert.h>
+#include <fcntl.h>
+#include <ev.h>
 
 #include "xbindjoy.h"
 #include "joystick.h"
@@ -40,143 +37,135 @@
 
 #define BILLION 1000000000
 
+// /////////////////////////////////////////////////////////////////////////////
+// variables
 
-/* C code structure: */
-/*   xbindjoy contains the event loop and as little else as possible */
-/*   joystick contains functions for handling joystick data */
-/*   sender contains functions for sending x events */
+// the structures that hold on to the scheme procedures defined by the user
+keymap_t* kmap;
+SCM axis_callback;
 
+// how many axes our joystick has
+int naxes;
 
-/* main event loop: call this and it will run forever, listening for
- * joystick inputs and running your code when it gets them */
-void joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axis_func) {
-    /* use the input from guile to build up the keymap. */
-    keymap_t* kmap = build_keymap_from_scm_alist(keymap_alist);
-    int naxes = scm_to_int(get_joystick_num_axes_wrapper(jsdevice)); /* TODO: FIXME: badwrong */
-    int* axis_vals = malloc(naxes * sizeof(int));
-    for(size_t i = 0; i < naxes; i++) axis_vals[i] = 0;
-    
-    /* open the joystick device */
-    /* we're only waiting on one joystick at a time for now, so we're
-     * going to use a single variable and hardcode the struct for the
-     * poll. TODO: handle multiple joysticks. */
-    char* jsdevice_c = scm_to_locale_string(jsdevice);
-    int jsfd = open(jsdevice_c, O_RDONLY);
-    free(jsdevice_c);
+// the file descriptor for our joystick
+int jsfd;
 
-    /* set up variables for main loop */
-    nfds_t npollfds = 1;
-    struct pollfd* pollfds = malloc(npollfds * sizeof(struct pollfd));
-    pollfds[0].fd = jsfd;
-    pollfds[0].events = POLLIN;
+// space to store the current joystick axis values
+int* axis_vals;
 
-    int last_poll_result;
-    struct timespec cur_time;
-    struct timespec last_tick;
-    struct timespec max_time_between_ticks;
-    
-    clock_gettime(CLOCK_MONOTONIC, &cur_time);
-    clock_gettime(CLOCK_MONOTONIC, &last_tick);
-    
-    int loops = 0;
-    double dt;
+// timing information
+double target_timing;
+struct timespec last_time;
 
-    if(verbose)
-        printf("joystick_loop: starting main loop!\n");
+// /////////////////////////////////////////////////////////////////////////////
+// libev callbacks
 
-    /* run the main loop */
-    while(1) {
-        /* wait either until the next tick comes around or we get an event */
-        last_poll_result = ppoll(pollfds, npollfds, &axis_freq, NULL);
-        clock_gettime(CLOCK_MONOTONIC, &cur_time);
+static void js_callback(EV_P_ ev_io* w, int revents) {
+	// read whatever's available for us
+	struct js_event e;
+	int result = read(jsfd, &e, sizeof(struct js_event));
 
-        if (last_poll_result > 0) { /* we got an event */
-            /* read a js event out of the file descriptor */
-            struct js_event e;
-            for(unsigned int i = 0; i < npollfds; i++) {
-                if (pollfds[i].revents & POLLIN) { /* we got data! */
-                    /* read and process the event, dispatch to the user's bindings */
-                    int result = read (pollfds[i].fd, &e, sizeof(struct js_event));
-                    if (result > 0) /* just to be safe */
-                        if (e.type == JS_EVENT_BUTTON) {
-                            handle_and_dispatch_keys(kmap, e);
-                        }
-                        else if (e.type == JS_EVENT_AXIS) {
-                            handle_axis(axis_vals, e);
-                        }
-                }
-                if (pollfds[i].revents & (POLLNVAL | POLLHUP | POLLERR)) {
-                    /* something else happened, print it and ignore*/
-                    printf("joystick loop: bad result from polling js%d: %x\n", i, pollfds[i].revents);
-                }
-            }
-        }
-        else if (last_poll_result < 0) { /* some kind of error */
-            /* we were probably just interrupted by a signal. let the
-             * program handle it as normal; we continue with our
-             * looping. */
-            int errsv = errno;
-            char* errstring = strerror(errsv);
-            printf("An error occurred while reading js: %s\n", errstring);
-            free(errstring);
-        }
-        /* last_poll_result == 0 means we timed out, which is fine */
-        
-        /* either way, we need to dispatch an axis update, so compute
-         * dt and make the call */
-        dt = (double)(cur_time.tv_sec - last_tick.tv_sec)
-            + (double)(cur_time.tv_nsec - last_tick.tv_nsec) / BILLION;
-        dispatch_axes(axis_vals, naxes, dt, axis_func);
-
-        /* update time structures */
-        last_tick.tv_sec = cur_time.tv_sec;
-        last_tick.tv_nsec = cur_time.tv_nsec;
-    }
-    /* end loop - we should probably never reach this code */
-
-    /* just to be safe, though, free memory */
-    free(pollfds);
-    free(kmap->keys); kmap->keys = NULL;
-    free(kmap); kmap = NULL;
-    free(axis_vals); axis_vals = NULL;
-
-    exit(0);
+	// handle the event - either using keys to call out to scheme procedures or updating our axes
+	if (e.type == JS_EVENT_BUTTON) {
+		handle_and_dispatch_keys(kmap, e);
+	}
+	else if (e.type == JS_EVENT_AXIS) {
+		handle_axis(axis_vals, e);
+	}
 }
 
-SCM get_axis_freq() {
-    return scm_from_double((double)axis_freq.tv_sec + (double)axis_freq.tv_nsec / (double)BILLION);
+static void timer_callback(EV_P_ ev_timer* w, int revents) {
+	// get current time and calculate dt
+	struct timespec cur_time;
+	clock_gettime(CLOCK_MONOTONIC, &cur_time);
+	double dt = (double)(cur_time.tv_sec - last_time.tv_sec)
+		+ (double)(cur_time.tv_nsec - last_time.tv_nsec) / BILLION;
+
+	// call out to scheme
+	dispatch_axes(axis_vals, naxes, dt, axis_callback);
+
+	/* update time structures so we can calc dt next time */
+	last_time.tv_sec = cur_time.tv_sec;
+	last_time.tv_nsec = cur_time.tv_nsec;
 }
 
+static void sigint_callback(EV_P_ ev_timer* w, int revents) {
+	ev_break(loop, EVBREAK_ALL);
+}
+
+// /////////////////////////////////////////////////////////////////////////////
+// main loop
+SCM joystick_loop(SCM jsdevice, SCM keymap_alist, SCM axis_func) {
+	// allocate space for and build keymap
+	kmap = build_keymap_from_scm_alist(keymap_alist);
+	
+	// figure out how many axes we have, then allocate space for storage and zero them out
+	naxes = scm_to_int(get_joystick_num_axes_wrapper(jsdevice)); /* TODO: FIXME: factor the
+	                                                              * get-num-axes functionality out
+	                                                              * and call it directly so we
+	                                                              * dno't have to stage through
+	                                                              * scheme. */
+	axis_vals = calloc(naxes, sizeof(int));
+	axis_callback = axis_func;
+	
+	/* open the joystick device */
+	/* we're only waiting on one joystick at a time for now, so we're
+	 * going to use a single variable and hardcode the struct for the
+	 * poll. TODO: handle multiple joysticks. */
+	char* jsdevice_c = scm_to_locale_string(jsdevice);
+	jsfd = open(jsdevice_c, O_RDONLY);
+	free(jsdevice_c);
+
+	// set up event loop
+	struct ev_loop* loop = ev_default_loop(0);
+
+	// set up and run watchers
+	ev_io js_watcher;
+	ev_init(&js_watcher, js_callback);
+	ev_io_set(&js_watcher, jsfd, EV_READ);
+	ev_io_start(loop, &js_watcher);
+    
+	ev_timer timer_watcher;
+	ev_init(&timer_watcher, timer_callback);
+	ev_timer_set(&timer_watcher, 0.0, target_timing);
+	ev_timer_start(loop, &timer_watcher);
+	clock_gettime(CLOCK_MONOTONIC, &last_time);
+
+	ev_signal sigint_watcher;
+	ev_signal_init(&sigint_watcher, sigint_callback, SIGUSR1);
+	ev_signal_start(loop, &sigint_watcher);
+
+	// run the event loop and wait for events to start coming in
+	ev_run(loop, 0);
+	
+	// free memory
+	free(axis_vals); axis_vals = NULL;
+	free(kmap->keys); kmap->keys = NULL;
+	free(kmap); kmap = NULL;
+
+	// return success
+	return SCM_BOOL_T;
+}
+
+
+// /////////////////////////////////////////////////////////////////////////////
+// initialize guile bindings
 void init_xbindjoy(void* data, int argc, char** argv) {
-    /* set up variables */
-    axis_freq.tv_sec = 0;
-    axis_freq.tv_nsec = BILLION / 80; /* this is about as fast as the
-                                       * scheduler is willing to do
-                                       * when IO isn't involved */
-    display = XOpenDisplay(getenv("DISPLAY"));
-    verbose = 0;
+	target_timing = 1.0/50.0;
 
-    /* so we can handle axis events properly in guile */
-    scm_c_define_gsubr("xbindjoy-get-axis-freq", 0, 0, 0, get_axis_freq);
-    
-    /* for figuring out joystick parameters */
-    scm_c_define_gsubr("device->jsname", 1, 0, 0, get_joystick_name_wrapper);
-    scm_c_define_gsubr("get-js-num-axes", 1, 0, 0, get_joystick_num_axes_wrapper);
+	// the x display to send key events to
+	display = XOpenDisplay(getenv("DISPLAY"));
 
-    /* for sending x events to the screen */
-    scm_c_define_gsubr("send-key", 3, 0, 0, send_key_wrapper);
-    scm_c_define_gsubr("send-button", 3, 0, 0, send_button_wrapper);
-    scm_c_define_gsubr("send-mouserel", 2, 0, 0, send_mouserel_wrapper);
-    scm_c_define_gsubr("send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
+	/* for figuring out joystick parameters */
+	scm_c_define_gsubr("device->jsname", 1, 0, 0, get_joystick_name_wrapper);
+	scm_c_define_gsubr("get-js-num-axes", 1, 0, 0, get_joystick_num_axes_wrapper);
 
-    /* and the loop */
-    scm_c_define_gsubr("xbindjoy-start", 3, 0, 0, joystick_loop);
+	/* for sending x events to the screen */
+	scm_c_define_gsubr("send-key", 3, 0, 0, send_key_wrapper);
+	scm_c_define_gsubr("send-button", 3, 0, 0, send_button_wrapper);
+	scm_c_define_gsubr("send-mouserel", 2, 0, 0, send_mouserel_wrapper);
+	scm_c_define_gsubr("send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
 
-    /* /\* and finally start reading lisp *\/ */
-    /* scm_shell(argc, argv); */
+	/* and the actual event loop */
+	scm_c_define_gsubr("xbindjoy-start", 3, 0, 0, joystick_loop);
 }
-
-/* int main(int argc, char** argv) { */
-/*     /\* boot up guile *\/ */
-/*     scm_boot_guile(argc, argv, inner_main, NULL); */
-/* } */

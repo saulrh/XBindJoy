@@ -30,7 +30,6 @@
             last-axis-vals-alist
             cur-axis-vals-alist
             axis-dt
-            axis-dt-nominal
             ;; the actual main loop
             xbindjoy-start))
 
@@ -93,7 +92,6 @@
 (define last-axis-vals-alist '())
 (define cur-axis-vals-alist '())
 (define axis-dt 0)
-(define axis-dt-nominal (xbindjoy-get-axis-freq))
 
 (define-syntax-rule (axesfun-with-history exp* ...)
   (lambda (dt axis-vals-alist)
