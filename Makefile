@@ -8,7 +8,7 @@ DESTDIR ?=
 src := $(wildcard src/*.c)
 obj := $(src:.c=.o)
 dep := $(obj:.o=.d)
-mod := xbindjoy.scm
+mod := saulrh/xbindjoy.scm
 solib := libguilexbindjoy.so
 
 # compiler flags. we use pkg-config to get the includes for guile. set the variable dbg if we want
@@ -30,24 +30,8 @@ $(solib): $(obj)
 %.o: %.c
 	$(CC) -o $@ $(CFLAGS) -c $<
 
-
-
-# install and uninstall targets. not that I'd really use these without staging through a debian
-# package or stow.
-.PHONY: install
-install: install-solibs install-gmodules
-install-solibs: $(solib)
-	mkdir -p $(DESTDIR)$(PREFIX)/lib
-	cp $^ $(DESTDIR)$(PREFIX)/lib/
-install-gmodules: $(mod)
-	mkdir -p $(DESTDIR)$(PREFIX)/share/guile/2.0/saulrh
-	cp $^ $(DESTDIR)$(PREFIX)/share/guile/2.0/saulrh/
-
-
-.PHONY: uninstall
-uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/lib/$(solib)
-	rm -f $(DESTDIR)$(PREFIX)/share/guile/2.0/saulrh/$(mod)
+test: $(solib)
+	LD_LIBRARY_PATH=. guile -L . ./examples/generic.scm
 
 
 # clean out object files and compilation products

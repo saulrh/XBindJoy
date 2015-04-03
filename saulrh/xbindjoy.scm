@@ -11,7 +11,7 @@
             send-mousebutton
             send-mouserel
             send-mouseabs
-            lambda-send-key
+            text->keyseq
             build-send-key-toggler
             get-js-num-buttons
             get-js-num-axes
@@ -25,15 +25,14 @@
             build-axismap
             ;; functions for working with axes
             bind-axis
-            axesfun-with-history
-            axis-transition
-            axis-region
+            bind-key-to-axis-region
+            ax-trans?
+            ax-in-region?
             ;; general utility functions
             normalize-jsaxes
             ;; variables
             last-axis-vals-alist
             cur-axis-vals-alist
-            axis-dt
             ;; the actual main loop
             xbindjoy-start))
 
@@ -49,16 +48,13 @@
 (define-syntax-rule (bind-button-when keycode preds exp* ...)
   (bind-button keycode (lambda () (when (every identity preds) exp* ...))))
 
-(define-syntax-rule (lambda-send-key action key delay)
-  (lambda () (send-key action key delay)))
+(define-syntax-rule (bind-key-to-button buttoncode keycode)
+  (begin (bind-button (cons 'press buttoncode) (lambda () (send-key 'press keycode 0)))
+         (bind-button (cons 'release buttoncode) (lambda () (send-key 'release keycode 0)))))
 
-(define-syntax-rule (bind-key-to-button buttoncode keycode delay)
-  (begin (bind-button (cons 'press buttoncode) (lambda () (send-key 'press keycode delay)))
-         (bind-button (cons 'release buttoncode) (lambda () (send-key 'release keycode delay)))))
-
-(define-syntax-rule (bind-button-to-button jsbutton mousebutton delay)
-  (begin (bind-button (cons 'press jsbutton) (lambda () (send-button 'press mousebutton delay)))
-         (bind-button (cons 'release jsbutton) (lambda () (send-button 'release mousebutton delay)))))
+(define-syntax-rule (bind-button-to-button jsbutton mousebutton)
+  (begin (bind-button (cons 'press jsbutton) (lambda () (send-mousebutton 'press mousebutton 0)))
+         (bind-button (cons 'release jsbutton) (lambda () (send-mousebutton 'release mousebutton 0)))))
 
 (define (build-send-key-toggler k init)
   (let ((toggle-var init))
@@ -85,38 +81,36 @@
             #f))))
 
 
+(define (text->keyseq str)
+  (string-fold-right (lambda (char next)
+                       (let ((sym (string->symbol (string char))))
+                         (cons `(press ,sym 0)
+                               (cons `(release ,sym 0)
+                                     next))))
+                     '()
+                     str))
 
 
 
 
 
-(define last-axis-vals-alist '())
-(define cur-axis-vals-alist '())
-(define axis-dt 0)
-
-(define-syntax-rule (axesfun-with-history exp* ...)
-  (lambda (dt axis-vals-alist)
-    (set! cur-axis-vals-alist (normalize-jsaxes axis-vals-alist))
-    (set! axis-dt dt)
-    exp* ...
-    (set! last-axis-vals-alist cur-axis-vals-alist)))
-
-(define (normalize-jsaxes alist)
-  (map
-   (lambda (x) (cons (car x) (/ (cdr x) 32768)))
-   alist))
-
-(define (axis-transition axis thresh to+)
-  (let ((cur (assoc-ref cur-axis-vals-alist axis))
-        (last (assoc-ref last-axis-vals-alist axis))
-        (pred (if to+ > <)))
+(define (ax-trans? axes axes-last axis thresh toward-pos)
+  (let ((cur (assoc-ref axes axis))
+        (last (assoc-ref axes-last axis))
+        (pred (if toward-pos > <)))
     (and (pred thresh last) (not (pred thresh cur)))))
 
-(define (axis-region axis a b key)
+(define (ax-in-region? axes axis a b)
+  (let ((lower (min a b))
+        (upper (max a b))
+        (val (assoc-ref axes axis)))
+    (and (> lower val) (< upper val))))
+
+(define (bind-key-to-axis-region axis a b key)
   (let ((lower (min a b))
         (upper (max a b)))
-    (if (axis-transition axis lower #t) (send-key 'press key 0))
-    (if (axis-transition axis lower #f) (send-key 'release key 0))
-    (if (axis-transition axis upper #t) (send-key 'release key 0))
-    (if (axis-transition axis upper #f) (send-key 'press key 0))))
-
+    (bind-axis (lambda (dt axes axes-last)
+                 (if (ax-trans? axes axes-last axis lower #t) (send-key 'press key 0))
+                 (if (ax-trans? axes axes-last axis lower #f) (send-key 'release key 0))
+                 (if (ax-trans? axes axes-last axis upper #t) (send-key 'release key 0))
+                 (if (ax-trans? axes axes-last axis upper #f) (send-key 'press key 0))))))

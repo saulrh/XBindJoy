@@ -64,30 +64,69 @@
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; variables
 
-;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; button handling
-(bind-button `(press . ,bt-a)
-  (lambda () (display-n "button a down")))
-(bind-button `(release . ,bt-a)
-  (lambda () (display-n "button a up")))
-
-(bind-button `(press . ,bt-a)
-  (lambda () (display-n "button a down 1")))
-(bind-button `(release . ,bt-a)
-  (lambda () (display-n "button a up 1")))
-
-(bind-button `(press . ,bt-b)
-  (lambda () (display-n "button b down")))
-(bind-button `(release . ,bt-b)
-  (lambda () (display-n "button b up")))
+(define do-axes-display #f)
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; axis handling
-(bind-axis (lambda (dt axes-raw)
-             (let ((axes (normalize-jsaxes axes-raw)))
-               (pretty-print axes-raw)
-               )))
-(bind-axis (lambda (dt axes-raw)
-             (pretty-print dt)))
+;;; button callbacks
+(bind-button `(press . ,bt-a) (lambda () (display "button a down 1\n")))
+(bind-button `(release . ,bt-a) (lambda () (display "button a up 1\n")))
+
+(bind-button `(press . ,bt-a) (lambda () (display "button a down 2\n")))
+(bind-button `(release . ,bt-a) (lambda () (display "button a up 2\n")))
+
+(bind-button `(press . ,bt-b) (lambda () (display "button b down\n")))
+(bind-button `(release . ,bt-b) (lambda () (display "button b up\n")))
+
+
+(bind-button `(press . ,bt-x) (lambda () (send-key 'press 'X 0)))
+(bind-button `(release . ,bt-x) (lambda () (send-key 'release 'X 0)))
+
+(bind-key-to-button bt-y 'Y)
+(bind-button-to-button bt-lb 1)
+
+(bind-button `(press . ,bt-start)
+             (lambda () (set! do-axes-display (not do-axes-display))))
+
+(bind-button `(press . ,bt-sel)
+             (let ((seq (text->keyseq "select")))
+               (lambda () 
+                 (send-keyseq seq))))
+
+
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; axis callbacks
+
+(bind-axis (lambda (dt axes axes-last)
+             (if do-axes-display
+                 (begin
+                   (display axes)
+                   (newline)))))
+
+(bind-axis (lambda (dt axes axes-last)
+             (begin (if (ax-trans? axes axes-last ax-ly 0.7 #t)
+                        (send-key 'press 'S 0))
+                    (if (ax-trans? axes axes-last ax-ly 0.7 #f)
+                        (send-key 'release 'S 0)))))
+(bind-key-to-axis-region ax-ly -0.7 -1.2 'W)
+(bind-key-to-axis-region ax-lx -0.7 -1.2 'A)
+(bind-key-to-axis-region ax-lx  0.7  1.2 'D)
+
+(define mousespeed 100)
+(bind-button `(press . ,bt-rb)
+             (lambda () (set! mousespeed 1000)))
+(bind-button `(release . ,bt-rb)
+             (lambda () (set! mousespeed 100)))
+
+(bind-axis (lambda (dt axes axes-last)
+             (let* ((lsx (assoc-ref axes ax-rx))
+                    (lsy (assoc-ref axes ax-ry))
+                    (vx (* lsx mousespeed))
+                    (vy (* lsy mousespeed))
+                    (dx (* vx dt))
+                    (dy (* vy dt)))
+               (begin
+                 (format #t "mouse movement: ~a ~a\n" dx dy)
+                 (send-mouserel dx dy)))))
 
 (xbindjoy-start jsd)
+(display "\n")

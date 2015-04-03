@@ -40,8 +40,10 @@ func_list_node_t** bindings_release;
 func_list_node_t* bindings_axes;
 
 // space to store the current joystick axis values
-int* axes_vals;
+double* axes_vals;
 size_t axes_count;
+
+SCM axes_vals_output_last;
 
 /* ************************************************* */
 /* joystick parameter discovery */
@@ -112,8 +114,15 @@ void init_bindings(int nbuttons, int naxes) {
 	bindings_press = calloc(nbuttons, sizeof(func_list_node_t*));
 	bindings_release = calloc(nbuttons, sizeof(func_list_node_t*));
 	bindings_axes = NULL;
-	axes_vals = calloc(naxes, sizeof(int));
+	axes_vals = calloc(naxes, sizeof(double));
 	axes_count = naxes;
+
+	axes_vals_output_last = SCM_EOL;
+	for (size_t i = 0; i < axes_count; i++)
+		axes_vals_output_last = scm_acons(scm_from_int(i),
+		                                  scm_from_int(axes_vals[i]),
+		                                  axes_vals_output_last);
+	scm_gc_protect_object(axes_vals_output_last);
 }
 
 SCM init_bindings_wrapper(SCM nbuttons, SCM naxes) {
@@ -182,18 +191,27 @@ SCM add_axis_binding_wrapper(SCM func) {
 }
 
 int handle_axis_event(struct js_event e) {
-	axes_vals[e.number] = e.value;
+	axes_vals[e.number] = (float)e.value / 32768.0;
 }
 
 int dispatch_axis_bindings(double dt) {
-	SCM output_alist = SCM_EOL;
+	SCM axes_vals_output = SCM_EOL;
 	for (size_t i = 0; i < axes_count; i++)
-		output_alist = scm_acons(scm_from_int(i), scm_from_int(axes_vals[i]), output_alist);
+		axes_vals_output = scm_acons(scm_from_int(i),
+		                             scm_from_double(axes_vals[i]),
+		                             axes_vals_output);
 	
 	func_list_node_t* cur;
 	cur = bindings_axes;
 	while (cur != NULL) {
-		scm_call_2(cur->func, scm_from_double(dt), output_alist);
+		scm_call_3(cur->func,
+		           scm_from_double(dt),
+		           axes_vals_output,
+		           axes_vals_output_last);
 		cur = cur->next;
 	}
+
+	scm_gc_unprotect_object(axes_vals_output_last);
+	axes_vals_output_last = axes_vals_output;
+	scm_gc_protect_object(axes_vals_output_last);
 }
