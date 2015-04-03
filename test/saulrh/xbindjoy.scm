@@ -13,12 +13,15 @@
             send-mouseabs
             lambda-send-key
             build-send-key-toggler
-            ;; functions for working with keymaps
-            define-key
-            define-key-when
-            define-shift
-            bind-key
+            get-js-num-buttons
+            get-js-num-axes
+            ;; functions for working with bindings
+            init-xbindjoy
             bind-button
+            bind-button-when
+            bind-button-to-button
+            bind-key-to-button
+            define-shift
             build-axismap
             ;; functions for working with axes
             axesfun-with-history
@@ -38,26 +41,23 @@
 
 
 ;;; 
-(define-syntax-rule (define-key keymap key func)
-  (set! keymap (acons key func keymap)))
+(define-syntax-rule (define-shift key shift-var)
+  (begin (bind-button (cons 'press key) (lambda () (set! shift-var #t)))
+         (bind-button (cons 'release key) (lambda () (set! shift-var #f)))))
 
-(define-syntax-rule (define-shift keymap key shift-var)
-  (begin (define-key keymap (cons 'press key) (lambda () (set! shift-var #t)))
-         (define-key keymap (cons 'release key) (lambda () (set! shift-var #f)))))
-
-(define-syntax-rule (define-key-when keymap keycode preds exp* ...)
-  (define-key keymap keycode (lambda () (when (every identity preds) exp* ...))))
+(define-syntax-rule (bind-button-when keycode preds exp* ...)
+  (bind-button keycode (lambda () (when (every identity preds) exp* ...))))
 
 (define-syntax-rule (lambda-send-key action key delay)
   (lambda () (send-key action key delay)))
 
-(define-syntax-rule (bind-key keymap buttoncode keycode delay)
-  (begin (define-key keymap (cons 'press buttoncode) (lambda () (send-key 'press keycode delay)))
-         (define-key keymap (cons 'release buttoncode) (lambda () (send-key 'release keycode delay)))))
+(define-syntax-rule (bind-key-to-button buttoncode keycode delay)
+  (begin (bind-button (cons 'press buttoncode) (lambda () (send-key 'press keycode delay)))
+         (bind-button (cons 'release buttoncode) (lambda () (send-key 'release keycode delay)))))
 
-(define-syntax-rule (bind-button keymap jsbutton mousebutton delay)
-  (begin (define-key keymap (cons 'press jsbutton) (lambda () (send-button 'press mousebutton delay)))
-         (define-key keymap (cons 'release jsbutton) (lambda () (send-button 'release mousebutton delay)))))
+(define-syntax-rule (bind-button-to-button jsbutton mousebutton delay)
+  (begin (bind-button (cons 'press jsbutton) (lambda () (send-button 'press mousebutton delay)))
+         (bind-button (cons 'release jsbutton) (lambda () (send-button 'release mousebutton delay)))))
 
 (define (build-send-key-toggler k init)
   (let ((toggle-var init))

@@ -30,6 +30,7 @@
 /* ************************************************* */
 /* joystick parameter discovery */
 
+// get name
 char* get_joystick_name(char* iodev) {
 
 	int jsfd = open(iodev, O_RDONLY);
@@ -40,8 +41,6 @@ char* get_joystick_name(char* iodev) {
 	int rvalue = ioctl(jsfd, JSIOCGNAME(buf_size * sizeof(jsname)), jsname);
 	if (rvalue < 0)
 		strcpy(jsname, "Unknown");
-	if (verbose) 
-		printf("get_joystick_name: name = '%s'\n", jsname);
 
 	return jsname;
 }
@@ -53,12 +52,30 @@ SCM get_joystick_name_wrapper(SCM iodev) {
 	return result;
 }
 
+// get number of buttons
+int get_joystick_num_buttons_fd(int jsfd) {
+	int nbuttons;
+	ioctl(jsfd, JSIOCGBUTTONS, &nbuttons);
+	return nbuttons;
+}
+int get_joystick_num_buttons(char* iodev) {
+	int jsfd = open(iodev, O_RDONLY);
+	int nbuttons = get_joystick_num_buttons_fd(jsfd);
+	close(jsfd);
+	return nbuttons;
+}
+SCM get_joystick_num_buttons_wrapper(SCM iodev) {
+	int nbuttons = get_joystick_num_buttons(scm_to_locale_string(iodev));
+	SCM result = scm_from_int(nbuttons);
+	return result;
+}
+
+// get number of axes
 int get_joystick_num_axes_fd(int jsfd) {
 	int naxes;
 	ioctl(jsfd, JSIOCGAXES, &naxes);
 	return naxes;
 }
-
 int get_joystick_num_axes(char* iodev) {
 	int jsfd = open(iodev, O_RDONLY);
 	int naxes = get_joystick_num_axes_fd(jsfd);
@@ -72,71 +89,74 @@ SCM get_joystick_num_axes_wrapper(SCM iodev) {
 }
 
 
-/* ************************************************* */
-/* key mapping */
 
-void build_key(SCM pair, bind_key_t* key) {
-	SCM action = scm_caar(pair);
-	SCM index = scm_cdar(pair);
-	SCM proc = scm_cdr(pair);
-    
-	char* action_c = scm_to_locale_string(scm_symbol_to_string(action));
-	key->is_press = strcmp(action_c, "press") == 0;
+/* ************************************************* */
+/* button bindings */
+
+void handle_and_dispatch_button(struct js_event e) {
+	func_list_node_t* cur;
+	if (e.value) {          // is a press event
+		cur = bindings_press[e.number];
+	} else {                // is a release event
+		cur = bindings_release[e.number];
+	}
+	while (cur != NULL) {
+		scm_call_0(cur->func);
+		cur = cur->next;
+	}
+}
+
+void add_binding(int key_index, int is_press, SCM function) {
+	// make new linked list node
+	func_list_node_t* new = malloc(sizeof(func_list_node_t));
+	new->func = function;
+	scm_permanent_object(new->func);
+
+	// and push onto head of the list for that key
+	if (is_press) {
+		new->next = bindings_press[key_index];
+		bindings_press[key_index] = new;
+	} else {
+		new->next = bindings_release[key_index];
+		bindings_release[key_index] = new;
+	}
+}
+
+SCM add_binding_wrapper(SCM key, SCM func) {
+	SCM key_is_press = scm_car(key);
+	SCM key_index = scm_cdr(key);
+
+	char* action_c = scm_to_locale_string(scm_symbol_to_string(key_is_press));
+	int is_press = strcmp(action_c, "press") == 0;
 	free(action_c);
 
-	key->key_index = scm_to_int(index);
-	key->function = proc;
-
-	if(verbose)
-		printf("build_key: binding %d %s\n", key->key_index, key->is_press?"down":"up");
+	int index = scm_to_int(key_index);
+	
+	add_binding(index, is_press, func);
 }
 
-keymap_t* build_keymap_from_scm_alist(SCM kmap_alist) {
-	keymap_t* result = malloc(sizeof(keymap_t));
-	result->nkeys = scm_to_int(scm_length(kmap_alist));
-	result->keys = malloc(result->nkeys * sizeof(bind_key_t));
-
-	if (verbose)
-		printf("build_keymap_from_scm_alist: building keymap out of alist of length %d\n", (int)result->nkeys);
-
-	SCM cur = kmap_alist;
-	int idx = 0;
-	while (!scm_is_null(cur)) {
-		build_key(scm_car(cur), result->keys + (idx++));
-		cur = scm_cdr(cur);
-	}
-
-	return result;
+void init_bindings(int nbuttons) {
+	bindings_press = calloc(nbuttons, sizeof(func_list_node_t*));
+	bindings_release = calloc(nbuttons, sizeof(func_list_node_t*));
 }
 
-int handle_and_dispatch_keys(keymap_t* kmap, struct js_event e) {
-	for (size_t i = 0; i < kmap->nkeys; i++) {
-		if (kmap->keys[i].is_press == e.value && kmap->keys[i].key_index == e.number) {
-			scm_call(kmap->keys[i].function, SCM_UNDEFINED);
-		}
-	}
+SCM init_bindings_wrapper(SCM nbuttons) {
+	init_bindings(scm_to_int(nbuttons));
+	return SCM_BOOL_T;
 }
-
 
 /* ************************************************* */
 /* axis mapping */
 
-int handle_axis(int* axis_vals, struct js_event e) {
+int handle_axis_event(int* axis_vals, struct js_event e) {
 	axis_vals[e.number] = e.value;
 }
 
-int dispatch_axes(int* axis_vals, size_t naxes, double dt, SCM axis_func) {
+int dispatch_axis_bindings(int* axis_vals, size_t naxes, double dt, SCM axis_func) {
 	SCM output_alist = SCM_EOL;
 
 	for (size_t i = 0; i < naxes; i++)
 		output_alist = scm_acons(scm_from_int(i), scm_from_int(axis_vals[i]), output_alist);
     
-	scm_call(axis_func, scm_from_double(dt), output_alist, SCM_UNDEFINED);
-
-	if(verbose) {
-		printf("Axis values: ");
-		for (size_t i = 0; i < naxes; i++)
-			printf("%d: %5d  ", (int)i, axis_vals[i]);
-		printf("\n");
-	}
+	scm_call_2(axis_func, scm_from_double(dt), output_alist);
 }

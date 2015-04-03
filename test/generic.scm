@@ -14,6 +14,23 @@
 (add-to-load-path (dirname (current-filename)))
 (use-modules (saulrh xbindjoy))
 
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; helper functions
+(define (display-n x)
+  (display x) (newline))
+
+;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; first things first: find our joystick and initialize bindings for it
+
+(define jsd (jsname->device "DragonRise Inc.   Generic   USB  Joystick  "))
+(if (string? jsd) 
+    (display-n (string-append "found joystick" jsd))
+    (begin
+      (display-n "Couldn't find requested joystick")
+      (quit)))
+
+(init-xbindjoy (get-js-num-buttons jsd))
+
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; assign symbols to buttons. 
@@ -48,19 +65,22 @@
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; variables
 
-(define js-key '())
-
-;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; helper functions
-(define (display-n x)
-  (display x) (newline))
-
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; button handling
-(define-key js-key `(press . ,bt-a)
+(bind-button `(press . ,bt-a)
   (lambda () (display-n "button a down")))
-(define-key js-key `(release . ,bt-a)
+(bind-button `(release . ,bt-a)
   (lambda () (display-n "button a up")))
+
+(bind-button `(press . ,bt-a)
+  (lambda () (display-n "button a down 1")))
+(bind-button `(release . ,bt-a)
+  (lambda () (display-n "button a up 1")))
+
+(bind-button `(press . ,bt-b)
+  (lambda () (display-n "button b down")))
+(bind-button `(release . ,bt-b)
+  (lambda () (display-n "button b up")))
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; axis handling
@@ -71,5 +91,4 @@
                     (display "")
                     )))
 
-(define jsd (jsname->device "DragonRise Inc.   Generic   USB  Joystick  "))
-(xbindjoy-start jsd js-key js-axis)
+(xbindjoy-start jsd js-axis)

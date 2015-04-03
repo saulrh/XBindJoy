@@ -23,30 +23,40 @@
 #include "xbindjoy.h"
 
 
-/* data structures for binding keys */
-typedef struct {
-	int key_index;
-	int is_press;
-	SCM function;
-} bind_key_t;
+// types to use for storing the button event callbacks
 
-typedef struct {
-	size_t nkeys;
-	bind_key_t* keys;
-} keymap_t;
+// linked list of procedures.
+struct func_list_node {
+	struct func_list_node* next;
+	SCM func;
+};
+typedef struct func_list_node func_list_node_t;
+
+// array of linked lists of procedures, one per button event. So '(release . 0) has its own linked
+// list of procedures, and when that action comes up we traverse the linked list calling all the
+// procedures.
+func_list_node_t** bindings_press;
+func_list_node_t** bindings_release;
 
 
 /* functions */
 char* get_joystick_name(char* iodev);
 SCM get_joystick_name_wrapper(SCM iodev);
 
+int get_joystick_num_buttons_fd(int jsfd);
+int get_joystick_num_buttons(char* iodev);
+SCM get_joystick_num_buttons_wrapper(SCM iodev);
+
 int get_joystick_num_axes_fd(int jsfd);
 int get_joystick_num_axes(char* iodev);
 SCM get_joystick_num_axes_wrapper(SCM iodev);
 
+void init_bindings(int nbuttons);
+SCM init_bindings_wrapper(SCM nbuttons);
+void add_binding(int key_index, int is_press, SCM function);
+SCM add_binding_wrapper(SCM key, SCM func);
 
-keymap_t* build_keymap_from_scm_alist(SCM kmap_alist);
-int handle_and_dispatch_keys(keymap_t* kmap, struct js_event e);
+void handle_and_dispatch_button(struct js_event e);
 
 int handle_axis(int* axis_vals, struct js_event e);
-int dispatch_axes(int* axis_vals, size_t naxes, double dt, SCM axis_func);
+int dispatch_axis_bindings(int* axis_vals, size_t naxes, double dt, SCM axis_func);
