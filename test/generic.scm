@@ -29,8 +29,8 @@
       (display-n "Couldn't find requested joystick")
       (quit)))
 
-(init-xbindjoy (get-js-num-buttons jsd))
-
+(init-xbindjoy (get-js-num-buttons jsd)
+               (get-js-num-axes jsd))
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; assign symbols to buttons. 
@@ -86,9 +86,9 @@
 ;;; axis handling
 (bind-axis (lambda (dt axes-raw)
              (let ((axes (normalize-jsaxes axes-raw)))
-               (display-n axes-raw)
+               (pretty-print axes-raw)
                )))
 (bind-axis (lambda (dt axes-raw)
-             (display-n dt)))
+             (pretty-print dt)))
 
 (xbindjoy-start jsd)

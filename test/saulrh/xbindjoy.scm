@@ -8,7 +8,7 @@
             ;; xtest functions for sending events
             send-key
             send-keyseq
-            send-button
+            send-mousebutton
             send-mouserel
             send-mouseabs
             lambda-send-key

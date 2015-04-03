@@ -40,22 +40,12 @@
 // /////////////////////////////////////////////////////////////////////////////
 // variables
 
-// the structures that hold on to the scheme procedures defined by the user
-SCM axis_callback;
-
-// how many axes our joystick has
-int naxes;
-
 // the file descriptor for our joystick
 int jsfd;
-
-// space to store the current joystick axis values
-int* axis_vals;
 
 // timing information
 double target_timing;
 struct timespec last_time;
-
 
 // /////////////////////////////////////////////////////////////////////////////
 // libev callbacks
@@ -70,7 +60,7 @@ static void js_callback(EV_P_ ev_io* w, int revents) {
 		handle_and_dispatch_button(e);
 	}
 	else if (e.type == JS_EVENT_AXIS) {
-		handle_axis_event(axis_vals, e);
+		handle_axis_event(e);
 	}
 }
 
@@ -82,8 +72,8 @@ static void timer_callback(EV_P_ ev_timer* w, int revents) {
 		+ (double)(cur_time.tv_nsec - last_time.tv_nsec) / BILLION;
 
 	// call out to scheme
-	dispatch_axis_bindings(axis_vals, naxes, dt);
-
+	dispatch_axis_bindings(dt);
+	
 	/* update time structures so we can calc dt next time */
 	last_time.tv_sec = cur_time.tv_sec;
 	last_time.tv_nsec = cur_time.tv_nsec;
@@ -103,10 +93,6 @@ SCM joystick_loop(SCM jsdevice) {
 	char* jsdevice_c = scm_to_locale_string(jsdevice);
 	jsfd = open(jsdevice_c, O_RDONLY);
 	free(jsdevice_c);
-
-	// allocate an array to hold on to the values for the joystick axes
-	naxes = get_joystick_num_axes_fd(jsfd);
-	axis_vals = calloc(naxes, sizeof(int));
 	
 	// set up event loop
 	struct ev_loop* loop = ev_default_loop(0);
@@ -135,9 +121,6 @@ SCM joystick_loop(SCM jsdevice) {
 
 	// run the event loop and wait for events to start coming in
 	ev_run(loop, 0);
-	
-	// free memory
-	free(axis_vals); axis_vals = NULL;
 
 	// close file descriptors.
 	close(jsfd);
@@ -161,14 +144,14 @@ void init_xbindjoy(void* data, int argc, char** argv) {
 
 	/* for sending x events to the screen */
 	scm_c_define_gsubr("send-key", 3, 0, 0, send_key_wrapper);
-	scm_c_define_gsubr("send-button", 3, 0, 0, send_button_wrapper);
+	scm_c_define_gsubr("send-mousebutton", 3, 0, 0, send_button_wrapper);
 	scm_c_define_gsubr("send-mouserel", 2, 0, 0, send_mouserel_wrapper);
 	scm_c_define_gsubr("send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
 
 	/* finally, the functions for actually adding your own functionality */
 	scm_c_define_gsubr("bind-button", 2, 0, 0, add_button_binding_wrapper);
 	scm_c_define_gsubr("bind-axis", 1, 0, 0, add_axis_binding_wrapper);
-	scm_c_define_gsubr("init-xbindjoy", 1, 0, 0, init_bindings_wrapper);
+	scm_c_define_gsubr("init-xbindjoy", 2, 0, 0, init_bindings_wrapper);
 
 	/* and the event loop */
 	scm_c_define_gsubr("xbindjoy-start", 1, 0, 0, joystick_loop);

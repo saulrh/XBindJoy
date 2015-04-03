@@ -28,6 +28,22 @@
 #include "joystick.h"
 
 /* ************************************************* */
+/* variables */
+
+// array of linked lists of procedures, one per button event. So '(release . 0) has its own linked
+// list of procedures, and when that action comes up we traverse the linked list calling all the
+// procedures.
+func_list_node_t** bindings_press;
+func_list_node_t** bindings_release;
+
+// and then a linked list of axis bindings
+func_list_node_t* bindings_axes;
+
+// space to store the current joystick axis values
+int* axes_vals;
+size_t axes_count;
+
+/* ************************************************* */
 /* joystick parameter discovery */
 
 // get name
@@ -92,13 +108,16 @@ SCM get_joystick_num_axes_wrapper(SCM iodev) {
 /* ************************************************* */
 /* bindings */
 
-void init_bindings(int nbuttons) {
+void init_bindings(int nbuttons, int naxes) {
 	bindings_press = calloc(nbuttons, sizeof(func_list_node_t*));
 	bindings_release = calloc(nbuttons, sizeof(func_list_node_t*));
+	bindings_axes = NULL;
+	axes_vals = calloc(naxes, sizeof(int));
+	axes_count = naxes;
 }
 
-SCM init_bindings_wrapper(SCM nbuttons) {
-	init_bindings(scm_to_int(nbuttons));
+SCM init_bindings_wrapper(SCM nbuttons, SCM naxes) {
+	init_bindings(scm_to_int(nbuttons), scm_to_int(naxes));
 	return SCM_BOOL_T;
 }
 
@@ -153,8 +172,8 @@ void add_axis_binding(SCM func) {
 	func_list_node_t* new = malloc(sizeof(func_list_node_t));
 	new->func = func;
 	scm_permanent_object(new->func);
-	new->next = bindings_axis;
-	bindings_axis = new;
+	new->next = bindings_axes;
+	bindings_axes = new;
 }
 
 SCM add_axis_binding_wrapper(SCM func) {
@@ -162,18 +181,17 @@ SCM add_axis_binding_wrapper(SCM func) {
 	return SCM_BOOL_T;
 }
 
-int handle_axis_event(int* axis_vals, struct js_event e) {
-	axis_vals[e.number] = e.value;
+int handle_axis_event(struct js_event e) {
+	axes_vals[e.number] = e.value;
 }
 
-int dispatch_axis_bindings(int* axis_vals, size_t naxes, double dt) {
+int dispatch_axis_bindings(double dt) {
 	SCM output_alist = SCM_EOL;
-
-	for (size_t i = 0; i < naxes; i++)
-		output_alist = scm_acons(scm_from_int(i), scm_from_int(axis_vals[i]), output_alist);
-    
+	for (size_t i = 0; i < axes_count; i++)
+		output_alist = scm_acons(scm_from_int(i), scm_from_int(axes_vals[i]), output_alist);
+	
 	func_list_node_t* cur;
-	cur = bindings_axis;
+	cur = bindings_axes;
 	while (cur != NULL) {
 		scm_call_2(cur->func, scm_from_double(dt), output_alist);
 		cur = cur->next;
