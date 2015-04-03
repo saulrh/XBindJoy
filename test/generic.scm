@@ -11,7 +11,6 @@
 (use-modules (ice-9 format))
 
 ;;; and finally the xbindjoy library
-(add-to-load-path (dirname (current-filename)))
 (use-modules (saulrh xbindjoy))
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
