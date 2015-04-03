@@ -24,6 +24,7 @@
             define-shift
             build-axismap
             ;; functions for working with axes
+            bind-axis
             axesfun-with-history
             axis-transition
             axis-region

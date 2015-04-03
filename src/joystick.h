@@ -38,6 +38,8 @@ typedef struct func_list_node func_list_node_t;
 func_list_node_t** bindings_press;
 func_list_node_t** bindings_release;
 
+// and then a linked list of axis bindings
+func_list_node_t* bindings_axis;
 
 /* functions */
 char* get_joystick_name(char* iodev);
@@ -53,10 +55,12 @@ SCM get_joystick_num_axes_wrapper(SCM iodev);
 
 void init_bindings(int nbuttons);
 SCM init_bindings_wrapper(SCM nbuttons);
-void add_binding(int key_index, int is_press, SCM function);
-SCM add_binding_wrapper(SCM key, SCM func);
+void add_button_binding(int key_index, int is_press, SCM function);
+SCM add_button_binding_wrapper(SCM key, SCM func);
+void add_axis_binding(SCM function);
+SCM add_axis_binding_wrapper(SCM func);
 
 void handle_and_dispatch_button(struct js_event e);
 
-int handle_axis(int* axis_vals, struct js_event e);
-int dispatch_axis_bindings(int* axis_vals, size_t naxes, double dt, SCM axis_func);
+int handle_axis_event(int* axis_vals, struct js_event e);
+int dispatch_axis_bindings(int* axis_vals, size_t naxes, double dt);

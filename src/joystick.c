@@ -89,9 +89,18 @@ SCM get_joystick_num_axes_wrapper(SCM iodev) {
 }
 
 
-
 /* ************************************************* */
-/* button bindings */
+/* bindings */
+
+void init_bindings(int nbuttons) {
+	bindings_press = calloc(nbuttons, sizeof(func_list_node_t*));
+	bindings_release = calloc(nbuttons, sizeof(func_list_node_t*));
+}
+
+SCM init_bindings_wrapper(SCM nbuttons) {
+	init_bindings(scm_to_int(nbuttons));
+	return SCM_BOOL_T;
+}
 
 void handle_and_dispatch_button(struct js_event e) {
 	func_list_node_t* cur;
@@ -106,7 +115,7 @@ void handle_and_dispatch_button(struct js_event e) {
 	}
 }
 
-void add_binding(int key_index, int is_press, SCM function) {
+void add_button_binding(int key_index, int is_press, SCM function) {
 	// make new linked list node
 	func_list_node_t* new = malloc(sizeof(func_list_node_t));
 	new->func = function;
@@ -122,7 +131,7 @@ void add_binding(int key_index, int is_press, SCM function) {
 	}
 }
 
-SCM add_binding_wrapper(SCM key, SCM func) {
+SCM add_button_binding_wrapper(SCM key, SCM func) {
 	SCM key_is_press = scm_car(key);
 	SCM key_index = scm_cdr(key);
 
@@ -132,31 +141,41 @@ SCM add_binding_wrapper(SCM key, SCM func) {
 
 	int index = scm_to_int(key_index);
 	
-	add_binding(index, is_press, func);
-}
+	add_button_binding(index, is_press, func);
 
-void init_bindings(int nbuttons) {
-	bindings_press = calloc(nbuttons, sizeof(func_list_node_t*));
-	bindings_release = calloc(nbuttons, sizeof(func_list_node_t*));
-}
-
-SCM init_bindings_wrapper(SCM nbuttons) {
-	init_bindings(scm_to_int(nbuttons));
 	return SCM_BOOL_T;
 }
 
 /* ************************************************* */
 /* axis mapping */
 
+void add_axis_binding(SCM func) {
+	func_list_node_t* new = malloc(sizeof(func_list_node_t));
+	new->func = func;
+	scm_permanent_object(new->func);
+	new->next = bindings_axis;
+	bindings_axis = new;
+}
+
+SCM add_axis_binding_wrapper(SCM func) {
+	add_axis_binding(func);
+	return SCM_BOOL_T;
+}
+
 int handle_axis_event(int* axis_vals, struct js_event e) {
 	axis_vals[e.number] = e.value;
 }
 
-int dispatch_axis_bindings(int* axis_vals, size_t naxes, double dt, SCM axis_func) {
+int dispatch_axis_bindings(int* axis_vals, size_t naxes, double dt) {
 	SCM output_alist = SCM_EOL;
 
 	for (size_t i = 0; i < naxes; i++)
 		output_alist = scm_acons(scm_from_int(i), scm_from_int(axis_vals[i]), output_alist);
     
-	scm_call_2(axis_func, scm_from_double(dt), output_alist);
+	func_list_node_t* cur;
+	cur = bindings_axis;
+	while (cur != NULL) {
+		scm_call_2(cur->func, scm_from_double(dt), output_alist);
+		cur = cur->next;
+	}
 }

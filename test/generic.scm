@@ -84,11 +84,11 @@
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; axis handling
-(define js-axis (lambda (dt axes-raw)
-                  (let ((axes (normalize-jsaxes axes-raw)))
-                    ;; (display-n axes-raw)
-                    ;; (display-n dt)
-                    (display "")
-                    )))
+(bind-axis (lambda (dt axes-raw)
+             (let ((axes (normalize-jsaxes axes-raw)))
+               (display-n axes-raw)
+               )))
+(bind-axis (lambda (dt axes-raw)
+             (display-n dt)))
 
-(xbindjoy-start jsd js-axis)
+(xbindjoy-start jsd)

@@ -70,7 +70,7 @@ static void js_callback(EV_P_ ev_io* w, int revents) {
 		handle_and_dispatch_button(e);
 	}
 	else if (e.type == JS_EVENT_AXIS) {
-		handle_axis(axis_vals, e);
+		handle_axis_event(axis_vals, e);
 	}
 }
 
@@ -82,7 +82,7 @@ static void timer_callback(EV_P_ ev_timer* w, int revents) {
 		+ (double)(cur_time.tv_nsec - last_time.tv_nsec) / BILLION;
 
 	// call out to scheme
-	dispatch_axis_bindings(axis_vals, naxes, dt, axis_callback);
+	dispatch_axis_bindings(axis_vals, naxes, dt);
 
 	/* update time structures so we can calc dt next time */
 	last_time.tv_sec = cur_time.tv_sec;
@@ -96,7 +96,7 @@ static void sigint_callback(EV_P_ ev_timer* w, int revents) {
 
 // /////////////////////////////////////////////////////////////////////////////
 // main loop
-SCM joystick_loop(SCM jsdevice, SCM axis_func) {
+SCM joystick_loop(SCM jsdevice) {
 	/* open the joystick device */
 	/* we're only waiting on one joystick at a time for now, so we're going to use a single
 	 * variable. TODO: handle multiple joysticks. */
@@ -108,10 +108,6 @@ SCM joystick_loop(SCM jsdevice, SCM axis_func) {
 	naxes = get_joystick_num_axes_fd(jsfd);
 	axis_vals = calloc(naxes, sizeof(int));
 	
-	// move a pointer to the axis callback to the outside scope so we can call it from the timer
-	// callback
-	axis_callback = axis_func;
-
 	// set up event loop
 	struct ev_loop* loop = ev_default_loop(0);
 
@@ -170,9 +166,10 @@ void init_xbindjoy(void* data, int argc, char** argv) {
 	scm_c_define_gsubr("send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
 
 	/* finally, the functions for actually adding your own functionality */
-	scm_c_define_gsubr("bind-button", 2, 0, 0, add_binding_wrapper);
+	scm_c_define_gsubr("bind-button", 2, 0, 0, add_button_binding_wrapper);
+	scm_c_define_gsubr("bind-axis", 1, 0, 0, add_axis_binding_wrapper);
 	scm_c_define_gsubr("init-xbindjoy", 1, 0, 0, init_bindings_wrapper);
 
 	/* and the event loop */
-	scm_c_define_gsubr("xbindjoy-start", 2, 0, 0, joystick_loop);
+	scm_c_define_gsubr("xbindjoy-start", 1, 0, 0, joystick_loop);
 }
