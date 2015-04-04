@@ -33,8 +33,8 @@ Disclaimer
 I am by no means a software engineer. This code isn't the best, and
 there are probably bugs lurking in the event logic that will bite you
 when you least expect it. Installing the actual library (xbindjoy.scm
-and libguilexbindjoy.so) is painful. If you find any, feel free to
-submit a bug report.
+and libguilexbindjoy.so) is painful. Feel free to submit a bug report
+if you find anything to improve.
 
 About
 =====
