@@ -32,6 +32,9 @@ run xbindjoy, this will (I hope) work:
   make test
 ````
 
+make test runs the example script in examples/generic.scm, which serves as
+a literate demonstration of a bunch of this project's features.
+
 Disclaimer
 ==========
 
