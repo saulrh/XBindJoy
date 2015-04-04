@@ -92,6 +92,14 @@ SCM joystick_loop(SCM jsdevice) {
 	 * variable. TODO: handle multiple joysticks. */
 	char* jsdevice_c = scm_to_locale_string(jsdevice);
 	jsfd = open(jsdevice_c, O_RDONLY);
+
+	// check to make sure our joystick is real
+	if (jsfd < 0) {
+		printf("Could not open device %s: %s\n", jsdevice_c, strerror(errno));
+		return SCM_BOOL_F;
+	}
+
+	// clean up the filename string.
 	free(jsdevice_c);
 	
 	// set up event loop
