@@ -197,8 +197,8 @@ probably have to go into the example and fiddle with the axis numbering informat
 ;;; do the toggle thing again, this time to figure out how fast we want our mouse to go (units are
 ;;; pixels per second).
 (define mousespeed 100)
-(bind-button->proc ('press bt-rb) (lambda () (set! mousespeed 1000)))
-(bind-button->proc ('release bt-rb) (lambda () (set! mousespeed 100)))
+(bind-button->proc (cons 'press bt-rb) (lambda () (set! mousespeed 1000)))
+(bind-button->proc (cons 'release bt-rb) (lambda () (set! mousespeed 100)))
 
 ;;; here we have a function that moves the mouse around. the axes values are stored as an
 ;;; association list; think of it as an inefficient but /extremely/ simple dictionary. we pull out
