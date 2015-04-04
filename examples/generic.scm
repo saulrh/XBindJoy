@@ -21,15 +21,18 @@
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; first things first: find our joystick and initialize bindings for it
 
-(define jsd (jsname->device "DragonRise Inc.   Generic   USB  Joystick  "))
-(if (string? jsd) 
-    (display-n (string-append "found joystick" jsd))
-    (begin
-      (display-n "Couldn't find requested joystick")
-      (quit)))
+;; (define jsname "DragonRise Inc.   Generic   USB  Joystick  ")
+;; (define jsd (jsname->device jsname))
+;; (if (string? jsd) 
+;;     (display-n (string-append "found joystick" jsd))
+;;     (begin
+;;       (format #t "Couldn't find joystick ~s\n" jsname)
+;;       (quit)))
+(define jsd "/dev/input/js0")
 
-(init-xbindjoy (get-js-num-buttons jsd)
-               (get-js-num-axes jsd))
+(define naxes (get-js-num-axes jsd))
+(define nbuttons (get-js-num-buttons jsd))
+(init-xbindjoy nbuttons naxes)
 
 ;;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; assign symbols to buttons. 
@@ -45,7 +48,13 @@
 (define ax-dx 5)                        ;d-pad x axis
 (define ax-dy 6)                        ;d-pad y axis
 
-;;; face buttons
+(if (< naxes 5)
+    (format #t
+"ERROR: AXISCOUNT: Your joystick has fewer axes than the one I used to build this example (~a vs
+~a). You will probably have to go into the example and fiddle with the axis numbering
+information.\n" 5 naxes))
+
+;;;
 (define bt-a 2)
 (define bt-b 1)
 (define bt-x 3)
