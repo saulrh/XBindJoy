@@ -22,6 +22,11 @@ Example uses
 Try it out
 ==========
 
+I'm using a weird off-brand fake ps1 controller to test this and it has
+really weird axes, so this may not work very well for you without tweaking
+the declarations in examples/generic.scm. Nevertheless, if you just want to
+run xbindjoy, this will (I hope) work:
+
 ````bash
   sudo apt-get install libev-dev libxtst-dev guile-2.0-dev libx11-dev
   make test
