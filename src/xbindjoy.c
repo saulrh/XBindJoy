@@ -144,15 +144,15 @@ void init_xbindjoy(void* data, int argc, char** argv) {
 
 	/* for sending x events to the screen */
 	scm_c_define_gsubr("send-key", 3, 0, 0, send_key_wrapper);
-	scm_c_define_gsubr("send-mousebutton", 3, 0, 0, send_button_wrapper);
+	scm_c_define_gsubr("send-mbutton", 3, 0, 0, send_button_wrapper);
 	scm_c_define_gsubr("send-mouserel", 2, 0, 0, send_mouserel_wrapper);
 	scm_c_define_gsubr("send-mouseabs", 2, 0, 0, send_mouseabs_wrapper);
 
 	/* finally, the functions for actually adding your own functionality */
-	scm_c_define_gsubr("bind-button", 2, 0, 0, add_button_binding_wrapper);
-	scm_c_define_gsubr("bind-axis", 1, 0, 0, add_axis_binding_wrapper);
-	scm_c_define_gsubr("init-xbindjoy", 2, 0, 0, init_bindings_wrapper);
+	scm_c_define_gsubr("bind-button->proc", 2, 0, 0, add_button_binding_wrapper);
+	scm_c_define_gsubr("bind-axis->proc", 1, 0, 0, add_axis_binding_wrapper);
 
 	/* and the event loop */
+	scm_c_define_gsubr("init-xbindjoy", 2, 0, 0, init_bindings_wrapper);
 	scm_c_define_gsubr("xbindjoy-start", 1, 0, 0, joystick_loop);
 }

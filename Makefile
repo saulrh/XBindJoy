@@ -31,7 +31,7 @@ $(solib): $(obj)
 	$(CC) -o $@ $(CFLAGS) -c $<
 
 test: $(solib)
-	LD_LIBRARY_PATH=. guile -L . ./examples/generic.scm
+	@LD_LIBRARY_PATH=. guile -L . ./examples/generic.scm
 
 
 # clean out object files and compilation products
