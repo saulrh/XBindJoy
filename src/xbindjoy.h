@@ -1,6 +1,6 @@
 /* xbindjoy.h: some global variables for the entire xbindjoy program
  *
- * Copyright 2013 Saul Reynolds-Haertle.
+ * Copyright 2015 Saul Reynolds-Haertle.
  *
  * This file is part of XBindJoy. 
  * 

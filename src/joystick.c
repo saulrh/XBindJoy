@@ -1,6 +1,6 @@
 /* joystick.c: joystick handling and guile wrappers for such
  *
- * Copyright 2013 Saul Reynolds-Haertle.
+ * Copyright 2015 Saul Reynolds-Haertle.
  *
  * This file is part of XBindJoy. 
  * 

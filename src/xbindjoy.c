@@ -1,6 +1,6 @@
 /* xbindjoy.c: event loop and some basic functions for the xbindjoy guile module
  *
- * Copyright 2013 Saul Reynolds-Haertle.
+ * Copyright 2015 Saul Reynolds-Haertle.
  *
  * This file is part of XBindJoy. 
  * 
