@@ -22,8 +22,10 @@ Example uses
 Try it out
 ==========
 
+````bash
   sudo apt-get install libev-dev libxtst-dev guile-2.0-dev libx11-dev
   make test
+````
 
 Disclaimer
 ==========
