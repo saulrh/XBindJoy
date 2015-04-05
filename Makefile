@@ -52,6 +52,8 @@ $(solib): $(obj)
 test: $(solib)
 	@LD_LIBRARY_PATH=. guile -L . ./examples/generic.scm
 
+run: $(solib)
+	@LD_LIBRARY_PATH=. rlwrap guile -L . -x "saulrh xbindjoy" --
 
 # clean out object files and compilation products
 .PHONY: clean
