@@ -9,6 +9,30 @@ movements from those procedures. Guile makes it easy to bind hotkeys
 to joystick button chords, radically change hotkey functionality at
 runtime, and more.
 
+How is this different from antimicro/qjoypad?
+=============================================
+
+xbindjoy is *significantly* more powerful than other available
+joystick mappers. xbindjoy is configured programmatically rather than
+graphically, and its bindings are full scheme procedures (function
+with associated closure) rather than declarative mappings. Basically,
+instead of a mapping being "button 3 is now keyboard key R", it's
+"when button 3 is pressed, call function F. F is a function that sends
+'keyboard key R down'". Because they're functions and closures, they
+can interact and store information, so you can do things like slowly
+increase mouse movement velocity by holding down one button and slowly
+slow down with another.
+
+The only thing antimicro and qjoypad have that xbindjoy doesn't is
+cross platform functionality. xbindjoy depends on X and the Linux
+joystick API. antimicro and qjoypad may also be easier for
+non-technical users to get running because they're concrete
+point-and-click interfaces, though I haven't done any user experience
+studies. I provide convenience functions for straightforward tasks
+(things that antimicro could handle) to make those easier but it
+doesn't measure up to "press button, press associated key".
+
+
 Example uses
 ============
 
@@ -21,11 +45,6 @@ Example uses
 
 Try it out
 ==========
-
-I'm using a weird off-brand fake ps1 controller to test this and it has
-really weird axes, so this may not work very well for you without tweaking
-the declarations in examples/generic.scm. Nevertheless, if you just want to
-run xbindjoy, this will (I hope) work:
 
 ````bash
   sudo apt-get install libev-dev libxtst-dev guile-2.0-dev libx11-dev
