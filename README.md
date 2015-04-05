@@ -21,7 +21,7 @@ instead of a mapping being "button 3 is now keyboard key R", it's
 'keyboard key R down'". Because they're functions and closures, they
 can interact and store information, so you can do things like slowly
 increase mouse movement velocity by holding down one button and slowly
-slow down with another.
+slow down with another. If antimicro is HTML, xbindjoy is HTML+JavaScript.
 
 The only thing antimicro and qjoypad have that xbindjoy doesn't is
 cross platform functionality. xbindjoy depends on X and the Linux
