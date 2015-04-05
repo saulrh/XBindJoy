@@ -24,7 +24,7 @@
 ;; ;;; takes the name of a joystick and searches through the numbered joystick devices in /dev/input/
 ;; ;;; to find one with the right name, then returns the path to that joystick.
 
-;; (define jsname "DragonRise Inc.   Generic   USB  Joystick  ")
+;; (define jsname "Microsoft X-Box 360 pad")
 ;; (define jsd (jsname->device jsname))
 ;; (if (string? jsd) 
 ;;     (display-n (string-append "found joystick" jsd))
@@ -49,10 +49,14 @@
 ;;; convenient names for axes.
 (define ax-lx 0)                        ;left stick x axis
 (define ax-ly 1)                        ;left stick y axis
+(define ax-lt 2)                        ;right stick x axis
+
 (define ax-rx 3)                        ;right stick x axis
 (define ax-ry 4)                        ;right stick y axis
-(define ax-dx 5)                        ;d-pad x axis
-(define ax-dy 6)                        ;d-pad y axis
+(define ax-rt 5)                        ;right stick y axis
+
+(define ax-dx 6)                        ;d-pad x axis
+(define ax-dy 7)                        ;d-pad y axis
 
 (if (< naxes 5)
     (format #t
@@ -60,17 +64,19 @@
 probably have to go into the example and fiddle with the axis numbering information.\n" 5 naxes))
 
 ;;; convenient names for buttons
-(define bt-a 2)                         ;face a button
+(define bt-a 0)                         ;face a button
 (define bt-b 1)                         ;face b button
-(define bt-x 3)                         ;... x
-(define bt-y 0)                         ;... y
-(define bt-start 9)                     ;start button
-(define bt-sel 8)                       ;select button
+(define bt-x 2)                         ;face x button
+(define bt-y 3)                         ;face y button
+(define bt-start 7)                     ;start button
+(define bt-sel 6)                       ;select button
+(define bt-xbox 8)                      ;big green xbox button
 
-(define bt-lb 6)                        ;left bumper
-(define bt-rb 7)                        ;right bumper
-(define bt-lt 4)                        ;left trigger
-(define bt-rt 5)                        ;right trigger
+(define bt-lb 4)                        ;left bumper
+(define bt-rb 5)                        ;right bumper
+
+(define bt-lsc 7)                       ;left stick click
+(define bt-rsc 8)                       ;right stick click
 
 
 ;;; first we demonstrate the fundamental feature: binding a function to a button
