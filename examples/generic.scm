@@ -172,9 +172,22 @@ probably have to go into the example and fiddle with the axis numbering informat
 ;;; joystick's axes, and the values of hte joystick's axes as of the last tick. axis values are
 ;;; doubles in the range (-1, 1), with 0 being neutral. here we check to see if do-axes-display is
 ;;; true, and if it is we print out the current value of our axes.
+;;; 
+;;; we also use the deadzone functionality to deal with my janky old xbox 360 controller and its
+;;; wobbly thumbsticks. ax-threshold takes in a list of axes and a set of deadzones and zeros out
+;;; the axes when they're inside the regions specified by the deadzones. the deadzone function
+;;; wants a list of (axis a . b) units, where the dead region is between a and b.
+(define deadzones (list (cons* ax-lx -0.2     0.2)
+                        (cons* ax-ly -0.2     0.2)
+                        (cons* ax-lt -inf.0  -0.99)
+                        (cons* ax-rx -0.2     0.2)
+                        (cons* ax-ry -0.2     0.2)
+                        (cons* ax-rt -inf.0  -0.99)
+                        (cons* ax-dx -0.2     0.2)
+                        (cons* ax-dy -0.2     0.2)))
 (bind-axis->proc (lambda (dt axes axes-last)
                    (if do-axes-display
-                       (begin
+                       (let ((axes-tr (ax-threshold axes deadzones)))
                          (display axes)
                          (newline)))))
 

@@ -46,6 +46,7 @@
             bind-axis-region->key
             ax-trans?
             ax-in-region?
+            ax-threshold
             ))
 
 ;;; load up the library that provides the low-level stuff
@@ -99,9 +100,22 @@
                      '()
                      str))
 
-
-
-
+(define* (ax-threshold axes deadzones)
+  (map (lambda (ax)
+         (let* ((idx (car ax))
+                (val (cdr ax))
+                (thr (assoc-ref deadzones idx))
+                (a (car thr))
+                (b (cdr thr))
+                (lower (min a b))
+                (upper (max a b)))
+           (assoc-set! axes
+                       idx
+                       (if (and (< val upper)
+                                (> val lower))
+                           0.0
+                           val))))
+       axes))
 
 (define (ax-trans? axes axes-last axis thresh toward-pos)
   (let ((cur (assoc-ref axes axis))
