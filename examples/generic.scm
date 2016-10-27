@@ -120,7 +120,7 @@ probably have to go into the example and fiddle with the axis numbering informat
 ;;; bindings for you in a simple way. this binds the keyboard key Y to the joystick button
 ;;; Y.
 ;;; 
-;;; USERS WHO DON'T WANT MUCH FUSS: this function binds a joystick button directly to a keyboard
+;;; USERS THAT DON'T WANT MUCH FUSS: this function binds a joystick button directly to a keyboard
 ;;; button. Copy and paste it as necessary.
 (bind-button->key bt-y 'Y)
 
@@ -207,7 +207,7 @@ probably have to go into the example and fiddle with the axis numbering informat
 ;;; key is down when that axis is inside that region. note that here we put one bound at infinity
 ;;; to make sure we get the entire extreme end of the joystick axis.
 ;;; 
-;;; USERS WHO DON'T WANT MUCH FUSS: this function binds the extremes of a joystick axis to keyboard
+;;; USERS THAT DON'T WANT MUCH FUSS: this function binds the extremes of a joystick axis to keyboard
 ;;; keys. Copy and paste it as necessary.
 (bind-axis-region->key ax-ly -0.7 -inf.0 'W)
 (bind-axis-region->key ax-lx -0.7 -inf.0 'A)
