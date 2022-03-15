@@ -21,8 +21,9 @@
 
 #include<X11/Xlib.h>
 
-int verbose;
-Display* display;
+extern int verbose;
+extern Display* display;
+
 
 typedef enum {
 	PRESS,
