@@ -40,6 +40,9 @@
 // /////////////////////////////////////////////////////////////////////////////
 // variables
 
+int verbose;
+Display* display;
+
 // the file descriptor for our joystick
 int jsfd;
 
@@ -79,7 +82,7 @@ static void timer_callback(EV_P_ ev_timer* w, int revents) {
 	last_time.tv_nsec = cur_time.tv_nsec;
 }
 
-static void sigint_callback(EV_P_ ev_timer* w, int revents) {
+static void sigint_callback(EV_P_ ev_signal* w, int revents) {
 	ev_break(loop, EVBREAK_ALL);
 }
 
